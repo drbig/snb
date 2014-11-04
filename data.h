@@ -4,10 +4,6 @@
 #define LINE_MAX_LEN 4096
 #define ERR_MAX_LEN 512
 
-typedef char bool;
-#define true 1
-#define false 0
-
 typedef struct Entry {
   wchar_t *text;
   int length;
