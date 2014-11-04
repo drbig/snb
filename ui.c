@@ -48,6 +48,7 @@ static int scr_width;
 
 void update(update_t mode);
 Result vitree_rebuild(Element *s, Element *e);
+void vitree_clear(Element *s, Element *e);
 
 Element *vitree_find(Element *e, Entry *en, search_t dir) {
   if (!en)
@@ -72,6 +73,7 @@ Element *vitree_find(Element *e, Entry *en, search_t dir) {
 }
 
 bool browse_do(int type, wchar_t input) {
+  Result res;
   Element *new;
   Entry *c, *o;
 
@@ -132,6 +134,28 @@ bool browse_do(int type, wchar_t input) {
             Current = new;
             update(ALL);
           }
+          break;
+        case L'H':
+          break;
+        case L'J':
+          if (entry_move(c, DOWN)) {
+            if (Current == Root) {
+              Root = Current->next;
+              free(Root->prev);
+              Root->prev = NULL;
+            }
+            if (c->parent && c->parent->next)
+              o = c->parent->next;
+            else
+              o = c->next;
+            vitree_rebuild(Root, vitree_find(Current, o, FORWARD));
+            Current = vitree_find(Root, c, FORWARD);
+            update(ALL);
+          }
+          break;
+        case L'K':
+          break;
+        case L'L':
           break;
       }
       break;
