@@ -160,8 +160,9 @@ bool browse_do(int type, wchar_t input) {
           }
           break;
         case L'K':
+          o = c->prev;
           if (entry_move(c, UP)) {
-            if (Current->prev && (Current->prev == Root)) {
+            if (o && (o == Root->entry)) {
               free(Root);
               Root = Current;
               Root->prev = NULL;
