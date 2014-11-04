@@ -73,7 +73,6 @@ Element *vitree_find(Element *e, Entry *en, search_t dir) {
 }
 
 bool browse_do(int type, wchar_t input) {
-  Result res;
   Element *new;
   Entry *c, *o;
 
@@ -138,11 +137,18 @@ bool browse_do(int type, wchar_t input) {
         case L'H':
           break;
         case L'J':
+          o = c->next;
           if (entry_move(c, DOWN)) {
             if (Current == Root) {
+              new = Root->prev;
+              Root = vitree_find(Root, o, FORWARD);
+              Root->prev = NULL;
+              free(new);
+              /*
               Root = Current->next;
               free(Root->prev);
               Root->prev = NULL;
+              */
             }
             if (c->parent && c->parent->next)
               o = c->parent->next;
@@ -154,6 +160,20 @@ bool browse_do(int type, wchar_t input) {
           }
           break;
         case L'K':
+          if (entry_move(c, UP)) {
+            if (Current->prev && (Current->prev == Root)) {
+              free(Root);
+              Root = Current;
+              Root->prev = NULL;
+            }
+            if (c->parent && c->parent->next)
+              o = c->parent->next;
+            else
+              o = c->next;
+            vitree_rebuild(Root, vitree_find(Current, o, FORWARD));
+            Current = vitree_find(Root, c, FORWARD);
+            update(ALL);
+          }
           break;
         case L'L':
           break;
