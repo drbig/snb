@@ -144,11 +144,6 @@ bool browse_do(int type, wchar_t input) {
               Root = vitree_find(Root, o, FORWARD);
               Root->prev = NULL;
               free(new);
-              /*
-              Root = Current->next;
-              free(Root->prev);
-              Root->prev = NULL;
-              */
             }
             if (c->parent && c->parent->next)
               o = c->parent->next;
