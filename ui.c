@@ -12,14 +12,23 @@
 #include "ui.h"
 #include "colors.h"
 
+typedef struct ElmOpen {
+  Entry *entry;
+  bool is;
+
+  struct ElmOpen *prev;
+  struct ElmOpen *next;
+} ElmOpen;
+
 typedef struct Element {
   Entry *entry;
 
   int level;
-  bool open;
 
   int lx, ly;
   int width, lines;
+
+  struct ElmOpen *open;
 
   struct Element *prev;
   struct Element *next;
@@ -30,6 +39,8 @@ typedef enum {BACKWARD, FORWARD} search_t;
 typedef enum {ALL, CURRENT} update_t;
 
 static WINDOW *scr_main = NULL;
+static ElmOpen *ElmOpenRoot = NULL;
+static ElmOpen *ElmOpenLast = NULL;
 static Element *Root = NULL;
 static Element *Current = NULL;
 static ui_mode_t Mode = BROWSE;
@@ -74,8 +85,8 @@ bool browse_do(int type, wchar_t input) {
           return false;
           break;
         case L'h':
-          if (Current->open) {
-            Current->open = false;
+          if (Current->open->is) {
+            Current->open->is = false;
             if (c->next)
               o = c->next;
             else if (c->parent)
@@ -110,10 +121,10 @@ bool browse_do(int type, wchar_t input) {
           }
           break;
         case L'l':
-          if (Current->open)
+          if (Current->open->is)
             new = Current->next;
           else if (c->child) {
-            Current->open = true;
+            Current->open->is = true;
             vitree_rebuild(Current, Current->next);
             new = Current;
           }
@@ -145,7 +156,7 @@ void element_draw(Element *e) {
   wattron(scr_main, A_BOLD);
   if (e == Current)
     wattron(scr_main, COLOR_PAIR(COLOR_CURRENT));
-  if (e->open)
+  if (e->open->is)
     bullet = BULLET_OPENED;
   else {
     if (en->child)
@@ -234,14 +245,72 @@ void ui_refresh() {
   update(ALL);
 }
 
+void elmopen_clear() {
+  ElmOpen *t, *n;
+
+  if (!ElmOpenRoot)
+    return;
+
+  t = ElmOpenRoot;
+  while (true) {
+    n = t->next;
+    free(t);
+    if (!n) break;
+  }
+
+  ElmOpenRoot = ElmOpenLast = NULL;
+}
+
+Result elmopen_new(Entry *e) {
+  ElmOpen *new;
+
+  new = malloc(sizeof(ElmOpen));
+  if (!new)
+    return result_new(false, NULL, L"Couldn't allocate ElmOpen");
+  new->is = false;
+  new->entry = e;
+  new->next = NULL;
+  new->prev = ElmOpenLast;
+  if (new->prev)
+    new->prev->next = new;
+
+  ElmOpenLast = new;
+  if (!ElmOpenRoot)
+    ElmOpenRoot = new;
+
+  return result_new(true, new, L"Allocated new ElmOpen");
+}
+
+Result elmopen_get(Entry *e) {
+  ElmOpen *t;
+
+  t = ElmOpenRoot;
+  while (t) {
+    if (t->entry == e) break;
+    t = t->next;
+  }
+
+  if (!t)
+    return elmopen_new(e);
+
+  return result_new(true, t, L"Found ElemOpen in cache");
+}
+
 Result element_new(Entry *e) {
+  Result res;
   Element *new;
 
   new = malloc(sizeof(Element));
   if (!new)
     return result_new(false, NULL, L"Couldn't allocate Element");
+  res = elmopen_get(e);
+  if (!res.success) {
+    free(new);
+    return res;
+  }
   bzero(new, sizeof(Element));
   new->entry = e;
+  new->open = (ElmOpen *)res.data;
 
   return result_new(true, new, L"Allocated new Element");
 }
@@ -286,7 +355,7 @@ Result vitree_rebuild(Element *s, Element *e) {
     if (s->entry->length % s->width > 0)
       s->lines++;
 
-    if (s->open) {
+    if (s->open->is) {
       nx = s->entry->child;
       level++;
     } else if (s->entry->next)
@@ -329,6 +398,8 @@ Result vitree_rebuild(Element *s, Element *e) {
 
 Result ui_set_root(Entry *e) {
   Result res;
+
+  elmopen_clear();
 
   if (Root)
     vitree_clear(Root, NULL);
