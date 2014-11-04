@@ -38,6 +38,9 @@ void update(bool all);
 Result cache_rebuild(Element *s, Element *e);
 
 Element *cache_find(Element *e, Entry *en, search_t dir) {
+  if (!en)
+    return NULL;
+
   switch (dir) {
     case BACKWARD:
       do {
@@ -58,9 +61,10 @@ Element *cache_find(Element *e, Entry *en, search_t dir) {
 
 bool browse_do(int type, wchar_t input) {
   Element *new;
-  Entry *c;
+  Entry *c, *o;
 
   new = NULL;
+  o = NULL;
   c = Current->entry;
   switch (type) {
     case OK:
@@ -69,6 +73,20 @@ bool browse_do(int type, wchar_t input) {
           return false;
           break;
         case L'h':
+          if (Current->open) {
+            Current->open = false;
+            if (c->next)
+              o = c->next;
+            else if (c->parent)
+              o = c->parent->next;
+            cache_rebuild(Current, cache_find(Current, o, FORWARD));
+            new = Current;
+          } else if (c->parent)
+            new = cache_find(Current, c->parent, BACKWARD);
+          if (new) {
+            Current = new;
+            update(true);
+          }
           break;
         case L'j':
           if (c->next)
@@ -248,13 +266,14 @@ Result cache_rebuild(Element *s, Element *e) {
   bool run;
   int level;
 
+  last = NULL;
+  run = true;
+  level = s->level;
+
   if (s->next)
     cache_clear(s->next, e);
   if (e)
     last = e->entry;
-
-  run = true;
-  level = s->level;
 
   while (run) {
     s->level = level;
@@ -271,6 +290,7 @@ Result cache_rebuild(Element *s, Element *e) {
       nx = s->entry->next;
     else {
       run = false;
+      s->next = NULL;
       nx = s->entry;
       while (nx->parent) {
         nx = nx->parent;
