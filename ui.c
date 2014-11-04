@@ -27,14 +27,15 @@ typedef struct Element {
 
 typedef enum {BROWSE, EDIT} ui_mode_t;
 typedef enum {BACKWARD, FORWARD} search_t;
+typedef enum {ALL, CURRENT} update_t;
 
 static WINDOW *scr_main = NULL;
 static Element *Root = NULL;
 static Element *Current = NULL;
-static ui_mode_t mode = BROWSE;
+static ui_mode_t Mode = BROWSE;
 static int scr_width;
 
-void update(bool all);
+void update(update_t mode);
 Result cache_rebuild(Element *s, Element *e);
 
 Element *cache_find(Element *e, Entry *en, search_t dir) {
@@ -85,7 +86,7 @@ bool browse_do(int type, wchar_t input) {
             new = cache_find(Current, c->parent, BACKWARD);
           if (new) {
             Current = new;
-            update(true);
+            update(ALL);
           }
           break;
         case L'j':
@@ -95,7 +96,7 @@ bool browse_do(int type, wchar_t input) {
             new = cache_find(Current, c->parent->next, FORWARD);
           if (new) {
             Current = new;
-            update(true);
+            update(ALL);
           }
           break;
         case L'k':
@@ -105,7 +106,7 @@ bool browse_do(int type, wchar_t input) {
             new = cache_find(Current, c->parent, BACKWARD);
           if (new) {
             Current = new;
-            update(true);
+            update(ALL);
           }
           break;
         case L'l':
@@ -118,7 +119,7 @@ bool browse_do(int type, wchar_t input) {
           }
           if (new) {
             Current = new;
-            update(true);
+            update(ALL);
           }
           break;
       }
@@ -179,7 +180,7 @@ void element_draw(Element *e) {
     waddwstr(scr_main, L"\n");
 }
 
-void update(bool all) {
+void update(update_t mode) {
   Element *e, *p;
   int y, yy;
 
@@ -187,48 +188,50 @@ void update(bool all) {
     return;
 
   e = Current;
-  if (all) {
-    wclear(scr_main);
+  switch (mode) {
+    case ALL:
+      wclear(scr_main);
 
-    y = (LINES / 2) - (Current->lines / 2);
-    if (y <= 0)
-      y = 0;
-    else {
-      if (Current != Root) {
-        while (e->prev && (y - e->prev->lines >= 0)) {
-          e = e->prev;
-          y -= e->lines;
-        }
-        if ((y - 1 >= 0) && (e->prev)) {
-          yy = y--;
-          p = e->prev;
-          while (yy >= 0) {
-            mvwaddnwstr(scr_main, yy, p->lx, p->entry->text+((p->lines-(y-yy))*p->width), p->width);
-            yy--;
+      y = (LINES / 2) - (Current->lines / 2);
+      if (y <= 0)
+        y = 0;
+      else {
+        if (Current != Root) {
+          while (e->prev && (y - e->prev->lines >= 0)) {
+            e = e->prev;
+            y -= e->lines;
           }
-          mvwaddwstr(scr_main, 0, p->lx-(BULLET_WIDTH/2+1), TEXT_MORE);
+          if ((y - 1 >= 0) && (e->prev)) {
+            yy = y--;
+            p = e->prev;
+            while (yy >= 0) {
+              mvwaddnwstr(scr_main, yy, p->lx, p->entry->text+((p->lines-(y-yy))*p->width), p->width);
+              yy--;
+            }
+            mvwaddwstr(scr_main, 0, p->lx-(BULLET_WIDTH/2+1), TEXT_MORE);
+          }
         }
       }
-    }
 
-    wmove(scr_main, y, 0);
-    while (y < LINES) {
-      element_draw(e);
-      y += e->lines;
+      wmove(scr_main, y, 0);
+      while (y < LINES) {
+        element_draw(e);
+        y += e->lines;
 
-      if (e->next)
-        e = e->next;
-      else
-        break;
-    }
-
-    wrefresh(scr_main);
-  } else {
+        if (e->next)
+          e = e->next;
+        else
+          break;
+      }
+      break;
+    case CURRENT:
+      break;
   }
+  wrefresh(scr_main);
 }
 
 void ui_refresh() {
-  update(true);
+  update(ALL);
 }
 
 Result element_new(Entry *e) {
@@ -387,7 +390,7 @@ void ui_mainloop() {
     if (type == ERR) {
       exit(7); // temporary crutch
     } else {
-      switch (mode) {
+      switch (Mode) {
         case BROWSE:
           run = browse_do(type, input);
           break;
