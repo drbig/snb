@@ -36,9 +36,9 @@ static ui_mode_t Mode = BROWSE;
 static int scr_width;
 
 void update(update_t mode);
-Result cache_rebuild(Element *s, Element *e);
+Result vitree_rebuild(Element *s, Element *e);
 
-Element *cache_find(Element *e, Entry *en, search_t dir) {
+Element *vitree_find(Element *e, Entry *en, search_t dir) {
   if (!en)
     return NULL;
 
@@ -80,10 +80,10 @@ bool browse_do(int type, wchar_t input) {
               o = c->next;
             else if (c->parent)
               o = c->parent->next;
-            cache_rebuild(Current, cache_find(Current, o, FORWARD));
+            vitree_rebuild(Current, vitree_find(Current, o, FORWARD));
             new = Current;
           } else if (c->parent)
-            new = cache_find(Current, c->parent, BACKWARD);
+            new = vitree_find(Current, c->parent, BACKWARD);
           if (new) {
             Current = new;
             update(ALL);
@@ -91,9 +91,9 @@ bool browse_do(int type, wchar_t input) {
           break;
         case L'j':
           if (c->next)
-            new = cache_find(Current, c->next, FORWARD);
+            new = vitree_find(Current, c->next, FORWARD);
           else if (c->parent && c->parent->next)
-            new = cache_find(Current, c->parent->next, FORWARD);
+            new = vitree_find(Current, c->parent->next, FORWARD);
           if (new) {
             Current = new;
             update(ALL);
@@ -101,9 +101,9 @@ bool browse_do(int type, wchar_t input) {
           break;
         case L'k':
           if (c->prev)
-            new = cache_find(Current, c->prev, BACKWARD);
+            new = vitree_find(Current, c->prev, BACKWARD);
           else if (c->parent)
-            new = cache_find(Current, c->parent, BACKWARD);
+            new = vitree_find(Current, c->parent, BACKWARD);
           if (new) {
             Current = new;
             update(ALL);
@@ -114,7 +114,7 @@ bool browse_do(int type, wchar_t input) {
             new = Current->next;
           else if (c->child) {
             Current->open = true;
-            cache_rebuild(Current, Current->next);
+            vitree_rebuild(Current, Current->next);
             new = Current;
           }
           if (new) {
@@ -246,7 +246,7 @@ Result element_new(Entry *e) {
   return result_new(true, new, L"Allocated new Element");
 }
 
-void cache_clear(Element *s, Element *e) {
+void vitree_clear(Element *s, Element *e) {
   Element *n;
 
   if (s == e)
@@ -262,7 +262,7 @@ void cache_clear(Element *s, Element *e) {
   }
 }
 
-Result cache_rebuild(Element *s, Element *e) {
+Result vitree_rebuild(Element *s, Element *e) {
   Result res;
   Element *new;
   Entry *nx, *last;
@@ -274,7 +274,7 @@ Result cache_rebuild(Element *s, Element *e) {
   level = s->level;
 
   if (s->next)
-    cache_clear(s->next, e);
+    vitree_clear(s->next, e);
   if (e)
     last = e->entry;
 
@@ -331,14 +331,14 @@ Result ui_set_root(Entry *e) {
   Result res;
 
   if (Root)
-    cache_clear(Root, NULL);
+    vitree_clear(Root, NULL);
 
   res = element_new(e);
   if (!res.success)
     return res;
 
   Root = Current = (Element *)res.data;
-  res = cache_rebuild(Root, NULL);
+  res = vitree_rebuild(Root, NULL);
   if (!res.success)
     return res;
 
