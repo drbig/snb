@@ -256,10 +256,11 @@ void update(update_t mode) {
             yy = y--;
             p = e->prev;
             while (yy >= 0) {
-              mvwaddnwstr(scr_main, yy, p->lx, p->entry->text+((p->lines-(y-yy))*p->width), p->width);
+              mvwaddnwstr(scr_main, yy, p->lx + BULLET_WIDTH,
+                  p->entry->text+((p->lines-(y-yy))*p->width), p->width);
               yy--;
             }
-            mvwaddwstr(scr_main, 0, p->lx-(BULLET_WIDTH/2+1), TEXT_MORE);
+            mvwaddwstr(scr_main, 0, p->lx + (BULLET_WIDTH / 2), TEXT_MORE);
           }
         }
       }
