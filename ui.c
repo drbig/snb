@@ -120,6 +120,53 @@ void cursor_move(cur_move_t dir) {
   }
 }
 
+void edit_remove(int offset) {
+  Entry *e;
+  update_t updmode;
+  int oly;
+
+  updmode = CURRENT;
+  e = Current->entry;
+
+  if (e->length == 0)
+    return;
+
+  if (Cursor.index + offset < 0)
+    return;
+
+  if ((offset == 0) && (Cursor.index == e->length))
+    return;
+
+  if ((offset == -1) && (Cursor.index == e->length))
+    Cursor.index--;
+
+  wmemmove(e->text+Cursor.index+offset, e->text+Cursor.index+offset+1, e->length - Cursor.index - 1);
+  e->length--;
+  e->text[e->length] = L'\0';
+
+  if (Cursor.ex == Cursor.lx) {
+    Current->lines--;
+    oly = Current->ly;
+    Current->ly = (LINES / 2) - (Current->lines / 2);
+    if (oly != Current->ly)
+      Cursor.y++;
+    updmode = ALL;
+  }
+  cursor_update();
+  if (offset == -1) {
+    Cursor.index++;
+    cursor_move(C_LEFT);
+  }
+  /*
+  if ((Cursor.index >= e->length) || (offset == -1)) {
+    if (offset == -1)
+      Cursor.index++;
+    cursor_move(C_LEFT);
+  }
+  */
+  update(updmode);
+}
+
 void edit_insert(wchar_t ch) {
   Entry *e;
   update_t updmode;
@@ -241,6 +288,13 @@ bool edit_do(int type, wchar_t input) {
         case KEY_RIGHT:
           cursor_move(C_RIGHT);
           update(CURRENT);
+          break;
+        case KEY_BACKSPACE:
+        case 127:
+          edit_remove(-1);
+          break;
+        case KEY_DC:
+          edit_remove(0);
           break;
       }
   }
