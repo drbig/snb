@@ -152,18 +152,13 @@ void edit_remove(int offset) {
       Cursor.y++;
     updmode = ALL;
   }
+
   cursor_update();
   if (offset == -1) {
     Cursor.index++;
     cursor_move(C_LEFT);
   }
-  /*
-  if ((Cursor.index >= e->length) || (offset == -1)) {
-    if (offset == -1)
-      Cursor.index++;
-    cursor_move(C_LEFT);
-  }
-  */
+
   update(updmode);
 }
 
@@ -256,12 +251,20 @@ void elmopen_set(bool to, Entry *s, Entry *e) {
 bool edit_do(int type, wchar_t input) {
   switch (type) {
     case OK:
-      if (input == L'\n') {
-        Mode = BROWSE;
-        curs_set(false);
-        update(CURRENT);
-      } else if (iswprint(input))
-        edit_insert(input);
+      switch (input) {
+        case L'\n':
+          Mode = BROWSE;
+          curs_set(false);
+          update(CURRENT);
+          break;
+        case 127:
+          edit_remove(-1);
+          break;
+        default:
+          if (iswprint(input))
+            edit_insert(input);
+          break;
+      }
       break;
     case KEY_CODE_YES:
       switch (input) {
@@ -289,8 +292,9 @@ bool edit_do(int type, wchar_t input) {
           cursor_move(C_RIGHT);
           update(CURRENT);
           break;
-        case KEY_BACKSPACE:
+        case 263:
         case 127:
+        case 8:
           edit_remove(-1);
           break;
         case KEY_DC:
