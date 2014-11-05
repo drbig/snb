@@ -6,6 +6,7 @@
 
 #include <string.h>
 #include <wchar.h>
+#include <wctype.h>
 #include <ncurses.h>
 
 #include "data.h"
@@ -119,6 +120,22 @@ void cursor_move(cur_move_t dir) {
   }
 }
 
+void edit_insert(wchar_t ch) {
+  Entry *e;
+
+  e = Current->entry;
+  if ((e->length + 1) >= (e->size)) {
+    e->size += scr_width;
+    e->text = realloc(e->text, e->size * sizeof(wchar_t));
+  }
+  wmemmove(e->text+Cursor.index+1, e->text+Cursor.index, e->length - Cursor.index);
+  e->length++;
+  e->text[Cursor.index] = ch;
+  e->text[e->length + 1] = L'\0';
+  cursor_update();
+  cursor_move(C_RIGHT);
+}
+
 Element *vitree_find(Element *e, Entry *en, search_t dir) {
   if (!en)
     return NULL;
@@ -178,6 +195,9 @@ bool edit_do(int type, wchar_t input) {
       if (input == L'\n') {
         Mode = BROWSE;
         curs_set(false);
+        update(CURRENT);
+      } else if (iswprint(input)) {
+        edit_insert(input);
         update(CURRENT);
       }
       break;
