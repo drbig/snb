@@ -72,6 +72,22 @@ Element *vitree_find(Element *e, Entry *en, search_t dir) {
   return NULL;
 }
 
+void elmopen_forget(Entry *e) {
+  ElmOpen *t;
+
+  t = ElmOpenRoot;
+  while ((t->entry != e) && (t = t->next));
+  if (t->prev)
+    t->prev->next = t->next;
+  else
+    ElmOpenRoot = t->next;
+  if (t->next)
+    t->next->prev = t->prev;
+  else
+    ElmOpenLast = t->prev;
+  free(t);
+}
+
 void elmopen_set(bool to, Entry *s, Entry *e) {
   bool act;
   ElmOpen *t;
@@ -109,6 +125,7 @@ bool browse_do(int type, wchar_t input) {
         case L'D':
           res = entry_delete(c);
           if (res.success) {
+            elmopen_forget(c);
             if (Current == Root) {
               free(Root);
               Root = Current->next;
