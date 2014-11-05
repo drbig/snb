@@ -72,7 +72,24 @@ Element *vitree_find(Element *e, Entry *en, search_t dir) {
   return NULL;
 }
 
+void elmopen_set(bool to, Entry *s, Entry *e) {
+  bool act;
+  ElmOpen *t;
+
+  act = s ? false : true;
+  t = ElmOpenRoot;
+  do {
+    if (e && (t->entry == e)) break;
+    if (act && (t->entry->child))
+      t->is = to;
+    else if (t->entry == s)
+      act = true;
+  } while ((t = t->next));
+}
+
+
 bool browse_do(int type, wchar_t input) {
+  Result res;
   Element *new;
   Entry *c, *o, *oo;
 
@@ -88,6 +105,16 @@ bool browse_do(int type, wchar_t input) {
         case L'd':
           Current->entry->crossed = !Current->entry->crossed;
           update(CURRENT);
+          break;
+        case L'i':
+          res = entry_insert(c, AFTER, 1);
+          if (res.success) {
+            vitree_rebuild(Current, vitree_find(Current, c->next, FORWARD));
+            Current = vitree_find(Current, (Entry *)res.data, FORWARD);
+            update(ALL);
+          } else {
+            // temporary crutch
+          }
           break;
         case L'h':
           if (Current->open->is) {
@@ -197,6 +224,36 @@ bool browse_do(int type, wchar_t input) {
             Current = vitree_find(Root, c, FORWARD);
             update(ALL);
           }
+          break;
+        case L'n':
+          if (Current->next) {
+            Current = Current->next;
+            update(ALL);
+          }
+          break;
+        case L'm':
+          if (Current->prev) {
+            Current = Current->prev;
+            update(ALL);
+          }
+          break;
+        case L'C':
+          new = Current;
+          while (new->level != 0) {
+            new = new->prev;
+          }
+          o = new->entry;
+          elmopen_set(false, NULL, NULL);
+          vitree_rebuild(Root, NULL);
+          Current = vitree_find(Root, o, FORWARD);
+          update(ALL);
+          break;
+        case L'O':
+          o = Current->entry;
+          elmopen_set(true, NULL, NULL);
+          vitree_rebuild(Root, NULL);
+          Current = vitree_find(Root, o, FORWARD);
+          update(ALL);
           break;
       }
       break;
