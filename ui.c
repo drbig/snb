@@ -122,18 +122,35 @@ void cursor_move(cur_move_t dir) {
 
 void edit_insert(wchar_t ch) {
   Entry *e;
+  update_t updmode;
+  wchar_t *new;
+  int oly;
 
+  updmode = CURRENT;
   e = Current->entry;
-  if ((e->length + 1) >= (e->size)) {
+
+  if ((e->length + 2) > e->size) {
     e->size += scr_width;
-    e->text = realloc(e->text, e->size * sizeof(wchar_t));
+    if (!(new = realloc(e->text, e->size * sizeof(wchar_t))))
+      exit(99); // crutch
+    e->text = new;
   }
   wmemmove(e->text+Cursor.index+1, e->text+Cursor.index, e->length - Cursor.index);
   e->length++;
   e->text[Cursor.index] = ch;
-  e->text[e->length + 1] = L'\0';
+  e->text[e->length] = L'\0';
+
+  if (Cursor.ex + 1 == scr_width) {
+    Current->lines++;
+    oly = Current->ly;
+    Current->ly = (LINES / 2) - (Current->lines / 2);
+    if (oly != Current->ly)
+      Cursor.y--;
+    updmode = ALL;
+  }
   cursor_update();
   cursor_move(C_RIGHT);
+  update(updmode);
 }
 
 Element *vitree_find(Element *e, Entry *en, search_t dir) {
@@ -196,10 +213,8 @@ bool edit_do(int type, wchar_t input) {
         Mode = BROWSE;
         curs_set(false);
         update(CURRENT);
-      } else if (iswprint(input)) {
+      } else if (iswprint(input))
         edit_insert(input);
-        update(CURRENT);
-      }
       break;
     case KEY_CODE_YES:
       switch (input) {
