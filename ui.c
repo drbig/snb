@@ -38,6 +38,11 @@ typedef enum {BROWSE, EDIT} ui_mode_t;
 typedef enum {BACKWARD, FORWARD} search_t;
 typedef enum {ALL, CURRENT} update_t;
 
+static struct Position {
+  int x, y;
+  int index;
+} Cursor;
+
 static WINDOW *scr_main = NULL;
 static ElmOpen *ElmOpenRoot = NULL;
 static ElmOpen *ElmOpenLast = NULL;
@@ -49,6 +54,19 @@ static int scr_width;
 void update(update_t mode);
 Result vitree_rebuild(Element *s, Element *e);
 void vitree_clear(Element *s, Element *e);
+
+void cursor_home() {
+  Cursor.y = Current->ly;
+  Cursor.x = Current->lx + BULLET_WIDTH;
+  Cursor.index = 0;
+}
+
+void cursor_end() {
+  Cursor.y = Current->ly + Current->lines - 1;
+  Cursor.x = Current->lx + BULLET_WIDTH + 
+    (Current->entry->length % Current->width);
+  Cursor.index = Current->entry->length;
+}
 
 Element *vitree_find(Element *e, Entry *en, search_t dir) {
   if (!en)
@@ -108,11 +126,20 @@ bool edit_do(int type, wchar_t input) {
     case OK:
       if (input == L'\n') {
         Mode = BROWSE;
+        curs_set(false);
         update(CURRENT);
       }
       break;
     case KEY_CODE_YES:
       switch (input) {
+        case KEY_HOME:
+          cursor_home();
+          update(CURRENT);
+          break;
+        case KEY_END:
+          cursor_end();
+          update(CURRENT);
+          break;
       }
   }
 
@@ -132,6 +159,8 @@ bool browse_do(int type, wchar_t input) {
       switch (input) {
         case L'\n':
           Mode = EDIT;
+          cursor_end();
+          curs_set(true);
           update(CURRENT);
           break;
         case L'Q':
@@ -425,6 +454,10 @@ void update(update_t mode) {
       element_draw(Current);
       break;
   }
+
+  if (Mode == EDIT)
+    wmove(scr_main, Cursor.y, Cursor.x);
+
   wrefresh(scr_main);
 }
 
