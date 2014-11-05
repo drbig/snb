@@ -74,7 +74,7 @@ Element *vitree_find(Element *e, Entry *en, search_t dir) {
 
 bool browse_do(int type, wchar_t input) {
   Element *new;
-  Entry *c, *o;
+  Entry *c, *o, *oo;
 
   new = NULL;
   o = NULL;
@@ -135,6 +135,15 @@ bool browse_do(int type, wchar_t input) {
           }
           break;
         case L'H':
+          if (c->parent)
+            o = c->parent->next;
+            if (o)
+              o = o->next;
+          if (entry_indent(c, LEFT)) {
+            vitree_rebuild(Root, vitree_find(Root, o, FORWARD));
+            Current = vitree_find(Root, c, FORWARD);
+            update(ALL);
+          }
           break;
         case L'J':
           o = c->next;
@@ -172,6 +181,18 @@ bool browse_do(int type, wchar_t input) {
           }
           break;
         case L'L':
+          o = c->prev;
+          if (c->parent && c->parent->next)
+            oo = c->parent->next;
+          else
+            oo = c->next;
+          if (entry_indent(c, RIGHT)) {
+            new = vitree_find(Root, o, FORWARD);
+            new->open->is = true;
+            vitree_rebuild(new, vitree_find(Root, oo, FORWARD));
+            Current = vitree_find(Root, c, FORWARD);
+            update(ALL);
+          }
           break;
       }
       break;
@@ -395,6 +416,9 @@ Result vitree_rebuild(Element *s, Element *e) {
     s->lines = s->entry->length / s->width;
     if (s->entry->length % s->width > 0)
       s->lines++;
+
+    if (s->open->is && !s->entry->child)
+      s->open->is = false;
 
     if (s->open->is) {
       nx = s->entry->child;
