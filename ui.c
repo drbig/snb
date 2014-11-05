@@ -55,9 +55,30 @@ static Element *Current = NULL;
 static ui_mode_t Mode = BROWSE;
 static int scr_width;
 
-void update(update_t mode);
+void cursor_update();
+void cursor_home();
+void cursor_end();
+void cursor_move(cur_move_t dir);
+void edit_insert(wchar_t ch);
+void edit_remove(int offset);
+Result elmopen_new(Entry *e);
+void elmopen_set(bool to, Entry *s, Entry *e);
+Result elmopen_get(Entry *e);
+void elmopen_forget(Entry *e);
+void elmopen_clear();
 Result vitree_rebuild(Element *s, Element *e);
+Element *vitree_find(Element *e, Entry *en, search_t dir);
 void vitree_clear(Element *s, Element *e);
+bool browse_do(int type, wchar_t input);
+bool edit_do(int type, wchar_t input);
+Result element_new(Entry *e);
+void element_draw(Element *e);
+void update(update_t mode);
+Result ui_set_root(Entry *e);
+Result ui_get_root();
+void ui_start();
+void ui_stop();
+void ui_mainloop();
 
 void cursor_update() {
   Cursor.lx = Current->lx + BULLET_WIDTH;
@@ -121,6 +142,39 @@ void cursor_move(cur_move_t dir) {
   }
 }
 
+void edit_insert(wchar_t ch) {
+  Entry *e;
+  update_t updmode;
+  wchar_t *new;
+  int oly;
+
+  updmode = CURRENT;
+  e = Current->entry;
+
+  if ((e->length + 2) > e->size) {
+    e->size += scr_width;
+    if (!(new = realloc(e->text, e->size * sizeof(wchar_t))))
+      exit(99); // crutch
+    e->text = new;
+  }
+  wmemmove(e->text+Cursor.index+1, e->text+Cursor.index, e->length - Cursor.index);
+  e->length++;
+  e->text[Cursor.index] = ch;
+  e->text[e->length] = L'\0';
+
+  if (Cursor.ex + 1 == scr_width) {
+    Current->lines++;
+    oly = Current->ly;
+    Current->ly = (LINES / 2) - (Current->lines / 2);
+    if (oly != Current->ly)
+      Cursor.y--;
+    updmode = ALL;
+  }
+  cursor_update();
+  cursor_move(C_RIGHT);
+  update(updmode);
+}
+
 void edit_remove(int offset) {
   Entry *e;
   update_t updmode;
@@ -163,37 +217,156 @@ void edit_remove(int offset) {
   update(updmode);
 }
 
-void edit_insert(wchar_t ch) {
-  Entry *e;
-  update_t updmode;
-  wchar_t *new;
-  int oly;
+Result elmopen_new(Entry *e) {
+  ElmOpen *new;
 
-  updmode = CURRENT;
-  e = Current->entry;
+  new = malloc(sizeof(ElmOpen));
+  if (!new)
+    return result_new(false, NULL, L"Couldn't allocate ElmOpen");
+  new->is = false;
+  new->entry = e;
+  new->next = NULL;
+  new->prev = ElmOpenLast;
+  if (new->prev)
+    new->prev->next = new;
 
-  if ((e->length + 2) > e->size) {
-    e->size += scr_width;
-    if (!(new = realloc(e->text, e->size * sizeof(wchar_t))))
-      exit(99); // crutch
-    e->text = new;
+  ElmOpenLast = new;
+  if (!ElmOpenRoot)
+    ElmOpenRoot = new;
+
+  return result_new(true, new, L"Allocated new ElmOpen");
+}
+
+void elmopen_set(bool to, Entry *s, Entry *e) {
+  bool act;
+  ElmOpen *t;
+
+  act = s ? false : true;
+  t = ElmOpenRoot;
+  do {
+    if (e && (t->entry == e)) break;
+    if (act && (t->entry->child))
+      t->is = to;
+    else if (t->entry == s)
+      act = true;
+  } while ((t = t->next));
+}
+
+Result elmopen_get(Entry *e) {
+  ElmOpen *t;
+
+  t = ElmOpenRoot;
+  while (t) {
+    if (t->entry == e) break;
+    t = t->next;
   }
-  wmemmove(e->text+Cursor.index+1, e->text+Cursor.index, e->length - Cursor.index);
-  e->length++;
-  e->text[Cursor.index] = ch;
-  e->text[e->length] = L'\0';
 
-  if (Cursor.ex + 1 == scr_width) {
-    Current->lines++;
-    oly = Current->ly;
-    Current->ly = (LINES / 2) - (Current->lines / 2);
-    if (oly != Current->ly)
-      Cursor.y--;
-    updmode = ALL;
+  if (!t)
+    return elmopen_new(e);
+
+  return result_new(true, t, L"Found ElemOpen in cache");
+}
+
+void elmopen_forget(Entry *e) {
+  ElmOpen *t;
+
+  t = ElmOpenRoot;
+  while ((t->entry != e) && (t = t->next));
+  if (t->prev)
+    t->prev->next = t->next;
+  else
+    ElmOpenRoot = t->next;
+  if (t->next)
+    t->next->prev = t->prev;
+  else
+    ElmOpenLast = t->prev;
+  free(t);
+}
+
+void elmopen_clear() {
+  ElmOpen *t, *n;
+
+  if (!ElmOpenRoot)
+    return;
+
+  t = ElmOpenRoot;
+  while (true) {
+    n = t->next;
+    free(t);
+    if (!n) break;
   }
-  cursor_update();
-  cursor_move(C_RIGHT);
-  update(updmode);
+
+  ElmOpenRoot = ElmOpenLast = NULL;
+}
+
+Result vitree_rebuild(Element *s, Element *e) {
+  Result res;
+  Element *new;
+  Entry *nx, *last;
+  bool run;
+  int level;
+
+  last = NULL;
+  run = true;
+  level = s->level;
+
+  if (s->next)
+    vitree_clear(s->next, e);
+  if (e)
+    last = e->entry;
+
+  while (run) {
+    s->level = level;
+    s->lx = level * BULLET_WIDTH;
+    s->width = scr_width - (level + 1) * BULLET_WIDTH;
+    s->lines = s->entry->length / s->width;
+    if (s->entry->length % s->width > 0)
+      s->lines++;
+    if (s->lines < 1)
+      s->lines++;
+
+    if (s->open->is && !s->entry->child)
+      s->open->is = false;
+
+    if (s->open->is) {
+      nx = s->entry->child;
+      level++;
+    } else if (s->entry->next)
+      nx = s->entry->next;
+    else {
+      run = false;
+      s->next = NULL;
+      nx = s->entry;
+      while (nx->parent) {
+        nx = nx->parent;
+        --level;
+        if (nx->next) {
+          nx = nx->next;
+          run = true;
+          break;
+        }
+      }
+    }
+
+    if (last && (nx == last)) {
+      s->next = e;
+      e->prev = s;
+      run = false;
+    }
+
+    if (!run) break;
+
+    res = element_new(nx);
+    if (!res.success)
+      return res;
+
+    new = (Element *)res.data;
+    new->prev = s;
+    s->next = new;
+    s = new;
+  }
+
+  return result_new(true, s, L"Cache rebuilt");
 }
 
 Element *vitree_find(Element *e, Entry *en, search_t dir) {
@@ -218,93 +391,20 @@ Element *vitree_find(Element *e, Entry *en, search_t dir) {
   return NULL;
 }
 
-void elmopen_forget(Entry *e) {
-  ElmOpen *t;
+void vitree_clear(Element *s, Element *e) {
+  Element *n;
 
-  t = ElmOpenRoot;
-  while ((t->entry != e) && (t = t->next));
-  if (t->prev)
-    t->prev->next = t->next;
-  else
-    ElmOpenRoot = t->next;
-  if (t->next)
-    t->next->prev = t->prev;
-  else
-    ElmOpenLast = t->prev;
-  free(t);
-}
+  if (s == e)
+    return;
 
-void elmopen_set(bool to, Entry *s, Entry *e) {
-  bool act;
-  ElmOpen *t;
+  while (true) {
+    n = s->next;
+    free(s);
 
-  act = s ? false : true;
-  t = ElmOpenRoot;
-  do {
-    if (e && (t->entry == e)) break;
-    if (act && (t->entry->child))
-      t->is = to;
-    else if (t->entry == s)
-      act = true;
-  } while ((t = t->next));
-}
-
-bool edit_do(int type, wchar_t input) {
-  switch (type) {
-    case OK:
-      switch (input) {
-        case L'\n':
-          Mode = BROWSE;
-          curs_set(false);
-          update(CURRENT);
-          break;
-        case 127:
-          edit_remove(-1);
-          break;
-        default:
-          if (iswprint(input))
-            edit_insert(input);
-          break;
-      }
-      break;
-    case KEY_CODE_YES:
-      switch (input) {
-        case KEY_HOME:
-          cursor_home();
-          update(CURRENT);
-          break;
-        case KEY_END:
-          cursor_end();
-          update(CURRENT);
-          break;
-        case KEY_UP:
-          cursor_move(C_UP);
-          update(CURRENT);
-          break;
-        case KEY_DOWN:
-          cursor_move(C_DOWN);
-          update(CURRENT);
-          break;
-        case KEY_LEFT:
-          cursor_move(C_LEFT);
-          update(CURRENT);
-          break;
-        case KEY_RIGHT:
-          cursor_move(C_RIGHT);
-          update(CURRENT);
-          break;
-        case 263:
-        case 127:
-        case 8:
-          edit_remove(-1);
-          break;
-        case KEY_DC:
-          edit_remove(0);
-          break;
-      }
+    if (!n) break;
+    if (e && (n == e)) break;
+    s = n;
   }
-
-  return true;
 }
 
 bool browse_do(int type, wchar_t input) {
@@ -515,6 +615,83 @@ bool browse_do(int type, wchar_t input) {
   return true;
 }
 
+bool edit_do(int type, wchar_t input) {
+  switch (type) {
+    case OK:
+      switch (input) {
+        case L'\n':
+          Mode = BROWSE;
+          curs_set(false);
+          update(CURRENT);
+          break;
+        case 127:
+          edit_remove(-1);
+          break;
+        default:
+          if (iswprint(input))
+            edit_insert(input);
+          break;
+      }
+      break;
+    case KEY_CODE_YES:
+      switch (input) {
+        case KEY_HOME:
+          cursor_home();
+          update(CURRENT);
+          break;
+        case KEY_END:
+          cursor_end();
+          update(CURRENT);
+          break;
+        case KEY_UP:
+          cursor_move(C_UP);
+          update(CURRENT);
+          break;
+        case KEY_DOWN:
+          cursor_move(C_DOWN);
+          update(CURRENT);
+          break;
+        case KEY_LEFT:
+          cursor_move(C_LEFT);
+          update(CURRENT);
+          break;
+        case KEY_RIGHT:
+          cursor_move(C_RIGHT);
+          update(CURRENT);
+          break;
+        case 263:
+        case 127:
+        case 8:
+          edit_remove(-1);
+          break;
+        case KEY_DC:
+          edit_remove(0);
+          break;
+      }
+  }
+
+  return true;
+}
+
+Result element_new(Entry *e) {
+  Result res;
+  Element *new;
+
+  new = malloc(sizeof(Element));
+  if (!new)
+    return result_new(false, NULL, L"Couldn't allocate Element");
+  res = elmopen_get(e);
+  if (!res.success) {
+    free(new);
+    return res;
+  }
+  bzero(new, sizeof(Element));
+  new->entry = e;
+  new->open = (ElmOpen *)res.data;
+
+  return result_new(true, new, L"Allocated new Element");
+}
+
 void element_draw(Element *e) {
   Entry *en;
   wchar_t *bullet;
@@ -625,166 +802,6 @@ void update(update_t mode) {
   wrefresh(scr_main);
 }
 
-void ui_refresh() {
-  update(ALL);
-}
-
-void elmopen_clear() {
-  ElmOpen *t, *n;
-
-  if (!ElmOpenRoot)
-    return;
-
-  t = ElmOpenRoot;
-  while (true) {
-    n = t->next;
-    free(t);
-    if (!n) break;
-  }
-
-  ElmOpenRoot = ElmOpenLast = NULL;
-}
-
-Result elmopen_new(Entry *e) {
-  ElmOpen *new;
-
-  new = malloc(sizeof(ElmOpen));
-  if (!new)
-    return result_new(false, NULL, L"Couldn't allocate ElmOpen");
-  new->is = false;
-  new->entry = e;
-  new->next = NULL;
-  new->prev = ElmOpenLast;
-  if (new->prev)
-    new->prev->next = new;
-
-  ElmOpenLast = new;
-  if (!ElmOpenRoot)
-    ElmOpenRoot = new;
-
-  return result_new(true, new, L"Allocated new ElmOpen");
-}
-
-Result elmopen_get(Entry *e) {
-  ElmOpen *t;
-
-  t = ElmOpenRoot;
-  while (t) {
-    if (t->entry == e) break;
-    t = t->next;
-  }
-
-  if (!t)
-    return elmopen_new(e);
-
-  return result_new(true, t, L"Found ElemOpen in cache");
-}
-
-Result element_new(Entry *e) {
-  Result res;
-  Element *new;
-
-  new = malloc(sizeof(Element));
-  if (!new)
-    return result_new(false, NULL, L"Couldn't allocate Element");
-  res = elmopen_get(e);
-  if (!res.success) {
-    free(new);
-    return res;
-  }
-  bzero(new, sizeof(Element));
-  new->entry = e;
-  new->open = (ElmOpen *)res.data;
-
-  return result_new(true, new, L"Allocated new Element");
-}
-
-void vitree_clear(Element *s, Element *e) {
-  Element *n;
-
-  if (s == e)
-    return;
-
-  while (true) {
-    n = s->next;
-    free(s);
-
-    if (!n) break;
-    if (e && (n == e)) break;
-    s = n;
-  }
-}
-
-Result vitree_rebuild(Element *s, Element *e) {
-  Result res;
-  Element *new;
-  Entry *nx, *last;
-  bool run;
-  int level;
-
-  last = NULL;
-  run = true;
-  level = s->level;
-
-  if (s->next)
-    vitree_clear(s->next, e);
-  if (e)
-    last = e->entry;
-
-  while (run) {
-    s->level = level;
-    s->lx = level * BULLET_WIDTH;
-    s->width = scr_width - (level + 1) * BULLET_WIDTH;
-    s->lines = s->entry->length / s->width;
-    if (s->entry->length % s->width > 0)
-      s->lines++;
-    if (s->lines < 1)
-      s->lines++;
-
-    if (s->open->is && !s->entry->child)
-      s->open->is = false;
-
-    if (s->open->is) {
-      nx = s->entry->child;
-      level++;
-    } else if (s->entry->next)
-      nx = s->entry->next;
-    else {
-      run = false;
-      s->next = NULL;
-      nx = s->entry;
-      while (nx->parent) {
-        nx = nx->parent;
-        --level;
-        if (nx->next) {
-          nx = nx->next;
-          run = true;
-          break;
-        }
-      }
-    }
-
-    if (last && (nx == last)) {
-      s->next = e;
-      e->prev = s;
-      run = false;
-    }
-
-    if (!run) break;
-
-    res = element_new(nx);
-    if (!res.success)
-      return res;
-
-    new = (Element *)res.data;
-    new->prev = s;
-    s->next = new;
-    s = new;
-  }
-
-  return result_new(true, s, L"Cache rebuilt");
-}
-
 Result ui_set_root(Entry *e) {
   Result res;
 
@@ -837,6 +854,10 @@ void ui_start() {
 void ui_stop() {
   delwin(scr_main);
   endwin();
+}
+
+void ui_refresh() {
+  update(ALL);
 }
 
 void ui_mainloop() {

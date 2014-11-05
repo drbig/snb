@@ -45,16 +45,6 @@ Result entry_new(int length) {
   return result_new(true, new, L"Allocated new Entry with %d text buffer", length);
 }
 
-void data_unload(Entry *e) {
-  if (e->child)
-    data_unload(e->child);
-  if (e->next)
-    data_unload(e->next);
-
-  free(e->text);
-  free(e);
-}
-
 Result data_load(FILE *input) {
   Result ret, res;
   Entry *new, *r, *c;
@@ -136,6 +126,16 @@ error:
   if (new) free(new);
   if (r) data_unload(r);
   return ret;
+}
+
+void data_unload(Entry *e) {
+  if (e->child)
+    data_unload(e->child);
+  if (e->next)
+    data_unload(e->next);
+
+  free(e->text);
+  free(e);
 }
 
 Result data_dump(Entry *e, FILE *output) {
