@@ -9,6 +9,7 @@
 #include <ncurses.h>
 #include <wchar.h>
 
+#include "user.h"
 #include "data.h"
 #include "ui.h"
 

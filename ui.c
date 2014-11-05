@@ -9,6 +9,7 @@
 #include <wctype.h>
 #include <ncurses.h>
 
+#include "user.h"
 #include "data.h"
 #include "ui.h"
 #include "colors.h"

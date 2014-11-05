@@ -1,9 +1,6 @@
 #ifndef DATA_H
 #define DATA_H
 
-#define LINE_MAX_LEN 4096
-#define ERR_MAX_LEN 512
-
 typedef struct Entry {
   wchar_t *text;
   int length;

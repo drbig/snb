@@ -9,6 +9,7 @@
 #include <string.h>
 #include <wchar.h>
 
+#include "user.h"
 #include "data.h"
 
 Result result_new(bool success, void *data, const wchar_t *fmt, ...) {
