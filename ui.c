@@ -106,6 +106,26 @@ bool browse_do(int type, wchar_t input) {
           Current->entry->crossed = !Current->entry->crossed;
           update(CURRENT);
           break;
+        case L'D':
+          res = entry_delete(c);
+          if (res.success) {
+            if (Current == Root) {
+              free(Root);
+              Root = Current->next;
+              Root->prev = NULL;
+              new = Root;
+            } else
+              new = Current->prev;
+            vitree_rebuild(new, Current->next);
+            Current = vitree_find(Root, (Entry *)res.data, FORWARD);
+            if (Current->next == Current) {
+              Root->next = Root->prev = NULL;
+            }
+            update(ALL);
+          } else {
+            // tempoarary crutch
+          }
+          break;
         case L'i':
           res = entry_insert(c, AFTER, 1);
           if (res.success) {
@@ -180,7 +200,7 @@ bool browse_do(int type, wchar_t input) {
           o = c->next;
           if (entry_move(c, DOWN)) {
             if (Current == Root) {
-              new = Root->prev;
+              new = Root;
               Root = vitree_find(Root, o, FORWARD);
               Root->prev = NULL;
               free(new);
@@ -326,7 +346,7 @@ void update(update_t mode) {
       wclear(scr_main);
 
       y = (LINES / 2) - (Current->lines / 2);
-      if (y <= 0)
+      if (y < 0)
         y = 0;
       else {
         if (Current != Root) {
