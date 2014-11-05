@@ -32,12 +32,14 @@ Result entry_new(int length) {
     return result_new(false, NULL, L"Couldn't allocate Entry");
   bzero(new, sizeof(Entry));
 
-  new->text = calloc(length, sizeof(wchar_t));
+  new->text = calloc(length + 1, sizeof(wchar_t));
   if (!new->text) {
     free(new);
     return result_new(false, NULL, L"Couldn't allocate Entry text buffer");
   }
+  bzero(new->text, (length + 1) * sizeof(wchar_t));
   new->length = length;
+  new->size = length + 1;
 
   return result_new(true, new, L"Allocated new Entry with %d text buffer", length);
 }
@@ -78,7 +80,7 @@ Result data_load(FILE *input) {
       goto error;
     }
 
-    res = entry_new(length + 1);
+    res = entry_new(length);
     if (!res.success) {
       ret = res;
       goto error;
@@ -360,8 +362,8 @@ void data_debug_dump(Entry *e, FILE *output) {
   else
     fwprintf(output, L"- ");
   fwprintf(output, L"\"%S\"", e->text);
-  fwprintf(output, L" (l:%d c:%d len:%d wlen:%d)\n",
-      level, e->crossed, e->length, wcslen(e->text));
+  fwprintf(output, L" (l:%d c:%d s:%d len:%d wlen:%d)\n",
+      level, e->crossed, e->size, e->length, wcslen(e->text));
   if (e->child)
     data_debug_dump(e->child, output);
   if (e->next)

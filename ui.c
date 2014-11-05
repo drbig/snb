@@ -37,10 +37,12 @@ typedef struct Element {
 typedef enum {BROWSE, EDIT} ui_mode_t;
 typedef enum {BACKWARD, FORWARD} search_t;
 typedef enum {ALL, CURRENT} update_t;
+typedef enum {C_UP, C_DOWN, C_LEFT, C_RIGHT} cur_move_t;
 
 static struct Position {
   int x, y;
   int index;
+  int lx, ex, ey;
 } Cursor;
 
 static WINDOW *scr_main = NULL;
@@ -55,17 +57,66 @@ void update(update_t mode);
 Result vitree_rebuild(Element *s, Element *e);
 void vitree_clear(Element *s, Element *e);
 
+void cursor_update() {
+  Cursor.lx = Current->lx + BULLET_WIDTH;
+  Cursor.ex = Cursor.lx + (Current->entry->length % Current->width);
+  Cursor.ey = Current->ly + Current->lines - 1;
+}
+
 void cursor_home() {
   Cursor.y = Current->ly;
-  Cursor.x = Current->lx + BULLET_WIDTH;
+  Cursor.x = Cursor.lx;
   Cursor.index = 0;
 }
 
 void cursor_end() {
-  Cursor.y = Current->ly + Current->lines - 1;
-  Cursor.x = Current->lx + BULLET_WIDTH + 
-    (Current->entry->length % Current->width);
+  Cursor.y = Cursor.ey;
+  Cursor.x = Cursor.ex;
   Cursor.index = Current->entry->length;
+}
+
+void cursor_move(cur_move_t dir) {
+  switch (dir) {
+    case C_UP:
+      if (Cursor.y > Current->ly) {
+        Cursor.y--;
+        Cursor.index -= Current->width;
+      }
+      break;
+    case C_DOWN:
+      if (Cursor.y < Cursor.ey) {
+        Cursor.y++;
+        if ((Cursor.y == Cursor.ey) && (Cursor.x > Cursor.ex)) {
+          Cursor.x = Cursor.ex;
+          Cursor.index = Current->entry->length;
+        } else
+          Cursor.index += Current->width;
+      }
+      break;
+    case C_LEFT:
+      if (Cursor.index > 0) {
+        Cursor.x--;
+        if (Cursor.x < Cursor.lx) {
+          Cursor.x = scr_width - 1;
+          if (Cursor.y > Current->ly)
+            Cursor.y--;
+        }
+        Cursor.index--;
+      }
+      break;
+    case C_RIGHT:
+      if (Cursor.index < Current->entry->length) {
+        Cursor.x++;
+        if (Cursor.x > (scr_width - 1)) {
+          if (Cursor.y < Cursor.ey) {
+            Cursor.y++;
+            Cursor.x = Cursor.lx;
+          }
+        }
+        Cursor.index++;
+      }
+      break;
+  }
 }
 
 Element *vitree_find(Element *e, Entry *en, search_t dir) {
@@ -140,6 +191,22 @@ bool edit_do(int type, wchar_t input) {
           cursor_end();
           update(CURRENT);
           break;
+        case KEY_UP:
+          cursor_move(C_UP);
+          update(CURRENT);
+          break;
+        case KEY_DOWN:
+          cursor_move(C_DOWN);
+          update(CURRENT);
+          break;
+        case KEY_LEFT:
+          cursor_move(C_LEFT);
+          update(CURRENT);
+          break;
+        case KEY_RIGHT:
+          cursor_move(C_RIGHT);
+          update(CURRENT);
+          break;
       }
   }
 
@@ -159,6 +226,7 @@ bool browse_do(int type, wchar_t input) {
       switch (input) {
         case L'\n':
           Mode = EDIT;
+          cursor_update();
           cursor_end();
           curs_set(true);
           update(CURRENT);
@@ -192,10 +260,12 @@ bool browse_do(int type, wchar_t input) {
           }
           break;
         case L'i':
-          res = entry_insert(c, AFTER, 1);
+          res = entry_insert(c, AFTER, scr_width);
           if (res.success) {
+            o = (Entry *)res.data;
+            o->length = 0;
             vitree_rebuild(Current, vitree_find(Current, c->next, FORWARD));
-            Current = vitree_find(Current, (Entry *)res.data, FORWARD);
+            Current = vitree_find(Current, o, FORWARD);
             update(ALL);
           } else {
             // temporary crutch
@@ -573,6 +643,8 @@ Result vitree_rebuild(Element *s, Element *e) {
     s->width = scr_width - (level + 1) * BULLET_WIDTH;
     s->lines = s->entry->length / s->width;
     if (s->entry->length % s->width > 0)
+      s->lines++;
+    if (s->lines < 1)
       s->lines++;
 
     if (s->open->is && !s->entry->child)

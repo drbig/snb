@@ -7,6 +7,7 @@
 typedef struct Entry {
   wchar_t *text;
   int length;
+  int size;
   bool crossed;
 
   struct Entry *prev;
