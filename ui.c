@@ -103,6 +103,21 @@ void elmopen_set(bool to, Entry *s, Entry *e) {
   } while ((t = t->next));
 }
 
+bool edit_do(int type, wchar_t input) {
+  switch (type) {
+    case OK:
+      if (input == L'\n') {
+        Mode = BROWSE;
+        update(CURRENT);
+      }
+      break;
+    case KEY_CODE_YES:
+      switch (input) {
+      }
+  }
+
+  return true;
+}
 
 bool browse_do(int type, wchar_t input) {
   Result res;
@@ -115,6 +130,10 @@ bool browse_do(int type, wchar_t input) {
   switch (type) {
     case OK:
       switch (input) {
+        case L'\n':
+          Mode = EDIT;
+          update(CURRENT);
+          break;
         case L'Q':
           return false;
           break;
@@ -313,8 +332,11 @@ void element_draw(Element *e) {
   e->ly = y;
 
   wattron(scr_main, A_BOLD);
-  if (e == Current)
+  if (e == Current) {
     wattron(scr_main, COLOR_PAIR(COLOR_CURRENT));
+    if (Mode == EDIT)
+      wattron(scr_main, A_REVERSE);
+  }
   if (e->open->is)
     bullet = BULLET_OPENED;
   else {
@@ -328,8 +350,11 @@ void element_draw(Element *e) {
     }
   }
   mvwaddwstr(scr_main, e->ly, e->lx, bullet);
-  if (e == Current)
+  if (e == Current) {
     wattroff(scr_main, COLOR_PAIR(COLOR_CURRENT));
+    if (Mode == EDIT)
+      wattroff(scr_main, A_REVERSE);
+  }
   wattroff(scr_main, A_BOLD);
 
   x = e->lx + BULLET_WIDTH;
@@ -593,7 +618,7 @@ void ui_start() {
   cbreak();
   keypad(stdscr, true);
   noecho();
-  curs_set(0);
+  curs_set(false);
 
   colors_init();
 
@@ -607,7 +632,7 @@ void ui_start() {
   clear();
   refresh();
 
-  update(true);
+  update(ALL);
 }
 
 void ui_stop() {
@@ -631,7 +656,7 @@ void ui_mainloop() {
           run = browse_do(type, input);
           break;
         case EDIT:
-          //run = edit_do(type, input);
+          run = edit_do(type, input);
           break;
       }
     }
