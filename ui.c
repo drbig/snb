@@ -85,6 +85,10 @@ bool browse_do(int type, wchar_t input) {
         case L'Q':
           return false;
           break;
+        case L'd':
+          Current->entry->crossed = !Current->entry->crossed;
+          update(CURRENT);
+          break;
         case L'h':
           if (Current->open->is) {
             Current->open->is = false;
@@ -298,6 +302,8 @@ void update(update_t mode) {
       }
       break;
     case CURRENT:
+      wmove(scr_main, Current->ly, Current->lx);
+      element_draw(Current);
       break;
   }
   wrefresh(scr_main);
