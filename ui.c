@@ -210,16 +210,24 @@ void edit_insert(wchar_t ch) {
 
   if (Cursor.ex + 1 == scr_width) {
     Current->lines++;
+    if (Partial.is) {
+      if (Cursor.x == scr_width)
+        Partial.offset++;
+      Partial.limit++;
+    }
     update(ALL);
     cursor_update();
     cursor_recalc();
     cursor_move(C_RIGHT);
+    //cursor_fix();
     //wmove(scr_main, Cursor.y, Cursor.x);
     wrefresh(scr_main);
   } else {
+    update(CURRENT);
     cursor_update();
     cursor_move(C_RIGHT);
-    update(CURRENT);
+    //cursor_fix();
+    wrefresh(scr_main);
   }
 }
 
@@ -240,29 +248,38 @@ void edit_remove(int offset) {
   if ((offset == -1) && (Cursor.index == e->length))
     Cursor.index--;
 
-  wmemmove(e->text+Cursor.index+offset, e->text+Cursor.index+offset+1, e->length - Cursor.index - 1);
+  wmemmove(e->text+Cursor.index+offset, e->text+Cursor.index+offset+1,
+      e->length - Cursor.index);
   e->length--;
   e->text[e->length] = L'\0';
 
   if (Cursor.ex == Cursor.lx) {
     Current->lines--;
+    if (Partial.is) {
+      //if (Cursor.x == Cursor.lx)
+      Partial.offset--;
+      Partial.limit--;
+    }
     update(ALL);
     cursor_update();
-    if (offset == -1) {
-      Cursor.index++;
-      cursor_move(C_LEFT);
-    }
     cursor_recalc();
-    cursor_fix();
-    //wmove(scr_main, Cursor.y, Cursor.x);
+    if (offset == -1) {
+      if (Cursor.index == e->length)
+        Cursor.index++;
+      cursor_move(C_LEFT);
+    } else
+      cursor_fix();
     wrefresh(scr_main);
   } else {
+    update(CURRENT);
     cursor_update();
     if (offset == -1) {
-      Cursor.index++;
+      if (Cursor.index == e->length)
+        Cursor.index++;
       cursor_move(C_LEFT);
-    }
-    update(CURRENT);
+    } else
+      cursor_fix();
+    wrefresh(scr_main);
   }
 }
 
@@ -469,10 +486,12 @@ bool browse_do(int type, wchar_t input) {
       switch (input) {
         case L'\n':
           Mode = EDIT;
+          update(CURRENT);
+          curs_set(true); 
           cursor_update();
           cursor_end();
-          curs_set(true);
-          update(CURRENT);
+          cursor_fix();
+          wrefresh(scr_main);
           break;
         case L'Q':
           return false;
@@ -893,8 +912,8 @@ void update(update_t mode) {
     }
   }
 
-  if (Mode == EDIT)
-    wmove(scr_main, Cursor.y, Cursor.x);
+  //if (Mode == EDIT)
+  //  wmove(scr_main, Cursor.y, Cursor.x);
 
   wrefresh(scr_main);
 }
