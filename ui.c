@@ -41,11 +41,17 @@ typedef enum {BACKWARD, FORWARD} search_t;
 typedef enum {ALL, CURRENT} update_t;
 typedef enum {C_UP, C_DOWN, C_LEFT, C_RIGHT} cur_move_t;
 
-static struct Position {
+static struct Cursor {
   int x, y;
   int index;
   int lx, ex, ey;
 } Cursor;
+
+static struct Partial {
+  bool is;
+  bool more, less;
+  int offset, limit;
+} Partial;
 
 static WINDOW *scr_main = NULL;
 static ElmOpen *ElmOpenRoot = NULL;
@@ -486,23 +492,39 @@ bool browse_do(int type, wchar_t input) {
           }
           break;
         case L'j':
-          if (c->next)
-            new = vitree_find(Current, c->next, FORWARD);
-          else if (c->parent && c->parent->next)
-            new = vitree_find(Current, c->parent->next, FORWARD);
-          if (new) {
-            Current = new;
-            update(ALL);
+          if (Partial.is && Partial.more) {
+            Partial.offset++;
+            if (Partial.offset == Partial.limit)
+              Partial.more = false;
+            Partial.less = true;
+            update(CURRENT);
+          } else {
+            if (c->next)
+              new = vitree_find(Current, c->next, FORWARD);
+            else if (c->parent && c->parent->next)
+              new = vitree_find(Current, c->parent->next, FORWARD);
+            if (new) {
+              Current = new;
+              update(ALL);
+            }
           }
           break;
         case L'k':
-          if (c->prev)
-            new = vitree_find(Current, c->prev, BACKWARD);
-          else if (c->parent)
-            new = vitree_find(Current, c->parent, BACKWARD);
-          if (new) {
-            Current = new;
-            update(ALL);
+          if (Partial.is && Partial.less) {
+            Partial.offset--;
+            if (Partial.offset == 0)
+              Partial.less = false;
+            Partial.more = true;
+            update(CURRENT);
+          } else {
+            if (c->prev)
+              new = vitree_find(Current, c->prev, BACKWARD);
+            else if (c->parent)
+              new = vitree_find(Current, c->parent, BACKWARD);
+            if (new) {
+              Current = new;
+              update(ALL);
+            }
           }
           break;
         case L'l':
@@ -521,8 +543,8 @@ bool browse_do(int type, wchar_t input) {
         case L'H':
           if (c->parent)
             o = c->parent->next;
-            if (o)
-              o = o->next;
+          if (o)
+            o = o->next;
           if (entry_indent(c, LEFT)) {
             vitree_rebuild(Root, vitree_find(Root, o, FORWARD));
             Current = vitree_find(Root, c, FORWARD);
@@ -700,6 +722,7 @@ void element_draw(Element *e) {
   Entry *en;
   wchar_t *bullet;
   int x, y, p;
+  int offset;
 
   en = e->entry;
   getyx(scr_main, y, x);
@@ -711,7 +734,9 @@ void element_draw(Element *e) {
     if (Mode == EDIT)
       wattron(scr_main, A_REVERSE);
   }
-  if (e->open->is)
+  if ((e == Current) && Partial.is)
+    bullet = BULLET_PARTIAL;
+  else if (e->open->is)
     bullet = BULLET_OPENED;
   else {
     if (en->child)
@@ -724,6 +749,15 @@ void element_draw(Element *e) {
     }
   }
   mvwaddwstr(scr_main, e->ly, e->lx, bullet);
+  if (Partial.is && (e->ly + 1 < LINES)) {
+    if (Partial.more && Partial.less)
+      bullet = BULLET_ML;
+    else if (Partial.more)
+      bullet = BULLET_MORE;
+    else
+      bullet = BULLET_LESS;
+    mvwaddwstr(scr_main, e->ly + 1, e->lx, bullet);
+  }
   if (e == Current) {
     wattroff(scr_main, COLOR_PAIR(COLOR_CURRENT));
     if (Mode == EDIT)
@@ -735,17 +769,25 @@ void element_draw(Element *e) {
 
   if (en->crossed)
     wattron(scr_main, A_BOLD | COLOR_PAIR(COLOR_CROSSED));
-  mvwaddnwstr(scr_main, y, x, en->text, e->width);
-  for (p = 2; p <= e->lines; p++) {
+  if ((e == Current) && Partial.is) {
+    offset = Partial.offset * e->width;
+    p = 2 + Partial.offset;
+  } else {
+    offset = 0;
+    p = 2;
+  }
+  mvwaddnwstr(scr_main, y, x, en->text+offset, e->width);
+  for (; p <= e->lines; p++) {
     y++;
     if (y >= LINES) break;
     mvwaddnwstr(scr_main, y, x, en->text+((p-1)*e->width), e->width);
   }
   if (en->crossed)
     wattroff(scr_main, A_BOLD | COLOR_PAIR(COLOR_CROSSED));
-  if (y >= LINES)
-    mvwaddwstr(scr_main, LINES - 1, scr_width - 1, TEXT_MORE);
-  else
+  if (y >= LINES) {
+    if (!Partial.is)
+      mvwaddwstr(scr_main, LINES - 1, scr_width - 1, TEXT_MORE);
+  } else
     waddwstr(scr_main, L"\n");
 }
 
@@ -756,15 +798,27 @@ void update(update_t mode) {
   if (!Current)
     return;
 
-  e = Current;
-  switch (mode) {
-    case ALL:
-      wclear(scr_main);
+  if (Current->lines > LINES) {
+    if (!Partial.is) {
+      Partial.is = true;
+      Partial.less = false;
+      Partial.more = true;
+      Partial.offset = 0;
+      Partial.limit = Current->lines - LINES;
+    }
 
-      y = (LINES / 2) - (Current->lines / 2);
-      if (y < 0)
-        y = 0;
-      else {
+    wclear(scr_main);
+    wmove(scr_main, 0, Current->lx);
+    element_draw(Current);
+  } else {
+    Partial.is = false;
+    y = (LINES / 2) - (Current->lines / 2);
+
+    switch (mode) {
+      case ALL:
+        wclear(scr_main);
+
+        e = Current;
         if (Current != Root) {
           while (e->prev && (y - e->prev->lines >= 0)) {
             e = e->prev;
@@ -781,23 +835,23 @@ void update(update_t mode) {
             mvwaddwstr(scr_main, 0, p->lx + (BULLET_WIDTH / 2), TEXT_MORE);
           }
         }
-      }
 
-      wmove(scr_main, y, 0);
-      while (y < LINES) {
-        element_draw(e);
-        y += e->lines;
+        wmove(scr_main, y, 0);
+        while (y < LINES) {
+          element_draw(e);
+          y += e->lines;
 
-        if (e->next)
-          e = e->next;
-        else
-          break;
-      }
-      break;
-    case CURRENT:
-      wmove(scr_main, Current->ly, Current->lx);
-      element_draw(Current);
-      break;
+          if (e->next)
+            e = e->next;
+          else
+            break;
+        }
+        break;
+      case CURRENT:
+        wmove(scr_main, Current->ly, Current->lx);
+        element_draw(Current);
+        break;
+    }
   }
 
   if (Mode == EDIT)
