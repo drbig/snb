@@ -96,12 +96,14 @@ void cursor_home() {
   Cursor.y = Current->ly;
   Cursor.x = Cursor.lx;
   Cursor.index = 0;
+  wmove(scr_main, Cursor.y, Cursor.x);
 }
 
 void cursor_end() {
   Cursor.y = Cursor.ey;
   Cursor.x = Cursor.ex;
   Cursor.index = Current->entry->length;
+  wmove(scr_main, Cursor.y, Cursor.x);
 }
 
 void cursor_move(cur_move_t dir) {
@@ -146,6 +148,7 @@ void cursor_move(cur_move_t dir) {
       }
       break;
   }
+  wmove(scr_main, Cursor.y, Cursor.x);
 }
 
 void cursor_recalc() {
@@ -663,27 +666,27 @@ bool edit_do(int type, wchar_t input) {
       switch (input) {
         case KEY_HOME:
           cursor_home();
-          update(CURRENT);
+          wrefresh(scr_main);
           break;
         case KEY_END:
           cursor_end();
-          update(CURRENT);
+          wrefresh(scr_main);
           break;
         case KEY_UP:
           cursor_move(C_UP);
-          update(CURRENT);
+          wrefresh(scr_main);
           break;
         case KEY_DOWN:
           cursor_move(C_DOWN);
-          update(CURRENT);
+          wrefresh(scr_main);
           break;
         case KEY_LEFT:
           cursor_move(C_LEFT);
-          update(CURRENT);
+          wrefresh(scr_main);
           break;
         case KEY_RIGHT:
           cursor_move(C_RIGHT);
-          update(CURRENT);
+          wrefresh(scr_main);
           break;
         case 263:
         case 127:
