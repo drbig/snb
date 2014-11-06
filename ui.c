@@ -245,8 +245,8 @@ void edit_remove(int offset) {
   if ((offset == 0) && (Cursor.index == e->length))
     return;
 
-  if ((offset == -1) && (Cursor.index == e->length))
-    Cursor.index--;
+  //if ((offset == -1) && (Cursor.index == e->length))
+  //  Cursor.index--;
 
   wmemmove(e->text+Cursor.index+offset, e->text+Cursor.index+offset+1,
       e->length - Cursor.index);
@@ -256,8 +256,9 @@ void edit_remove(int offset) {
   if (Cursor.ex == Cursor.lx) {
     Current->lines--;
     if (Partial.is) {
-      //if (Cursor.x == Cursor.lx)
       Partial.offset--;
+      if (Partial.offset == 0)
+        Partial.less = false;
       Partial.limit--;
     }
     update(ALL);
@@ -911,9 +912,6 @@ void update(update_t mode) {
         break;
     }
   }
-
-  //if (Mode == EDIT)
-  //  wmove(scr_main, Cursor.y, Cursor.x);
 
   wrefresh(scr_main);
 }
