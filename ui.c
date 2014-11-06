@@ -65,6 +65,7 @@ void cursor_update();
 void cursor_home();
 void cursor_end();
 void cursor_move(cur_move_t dir);
+void cursor_fix();
 void edit_insert(wchar_t ch);
 void edit_remove(int offset);
 Result elmopen_new(Entry *e);
@@ -96,14 +97,15 @@ void cursor_home() {
   Cursor.y = Current->ly;
   Cursor.x = Cursor.lx;
   Cursor.index = 0;
-  wmove(scr_main, Cursor.y, Cursor.x);
+  cursor_fix();
 }
 
 void cursor_end() {
   Cursor.y = Cursor.ey;
   Cursor.x = Cursor.ex;
   Cursor.index = Current->entry->length;
-  wmove(scr_main, Cursor.y, Cursor.x);
+  //wmove(scr_main, Cursor.y, Cursor.x);
+  cursor_fix();
 }
 
 void cursor_move(cur_move_t dir) {
@@ -148,12 +150,45 @@ void cursor_move(cur_move_t dir) {
       }
       break;
   }
-  wmove(scr_main, Cursor.y, Cursor.x);
+  //wmove(scr_main, Cursor.y, Cursor.x);
+  cursor_fix();
 }
 
 void cursor_recalc() {
   int index = Cursor.index > 0 ? Cursor.index : 1;
   Cursor.y = Current->ly + (index / Current->width);
+}
+
+void cursor_fix() {
+  int y;
+
+  y = Cursor.y;
+  if (Partial.is) {
+    if (Cursor.y < Partial.offset) {
+      Partial.offset = Cursor.y;
+      Partial.less = true;
+      Partial.more = true;
+      if (Partial.offset == 0) {
+        Partial.less = false;
+        Partial.more = true;
+      }
+      update(CURRENT);
+      y = 0;
+    } else if (Cursor.y > (Partial.offset + (LINES - 1))) {
+      Partial.offset = Cursor.y - (LINES - 1);
+      Partial.less = true;
+      Partial.more = true;
+      if (Partial.offset == Partial.limit) {
+        Partial.less = true;
+        Partial.more = false;
+      }
+      update(CURRENT);
+      y = LINES - 1;
+    } else {
+      y -= Partial.offset;
+    }
+  }
+  wmove(scr_main, y, Cursor.x);
 }
 
 void edit_insert(wchar_t ch) {
@@ -179,7 +214,7 @@ void edit_insert(wchar_t ch) {
     cursor_update();
     cursor_recalc();
     cursor_move(C_RIGHT);
-    wmove(scr_main, Cursor.y, Cursor.x);
+    //wmove(scr_main, Cursor.y, Cursor.x);
     wrefresh(scr_main);
   } else {
     cursor_update();
@@ -218,7 +253,8 @@ void edit_remove(int offset) {
       cursor_move(C_LEFT);
     }
     cursor_recalc();
-    wmove(scr_main, Cursor.y, Cursor.x);
+    cursor_fix();
+    //wmove(scr_main, Cursor.y, Cursor.x);
     wrefresh(scr_main);
   } else {
     cursor_update();
