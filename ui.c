@@ -130,7 +130,7 @@ void cursor_move(cur_move_t dir) {
     case C_RIGHT:
       if (Cursor.index < Current->entry->length) {
         Cursor.x++;
-        if (Cursor.x > (scr_width - 1)) {
+        if (Cursor.x == scr_width) {
           if (Cursor.y < Cursor.ey) {
             Cursor.y++;
             Cursor.x = Cursor.lx;
@@ -142,13 +142,15 @@ void cursor_move(cur_move_t dir) {
   }
 }
 
+void cursor_recalc() {
+  int index = Cursor.index > 0 ? Cursor.index : 1;
+  Cursor.y = Current->ly + (index / Current->width);
+}
+
 void edit_insert(wchar_t ch) {
   Entry *e;
-  update_t updmode;
   wchar_t *new;
-  int oly;
 
-  updmode = CURRENT;
   e = Current->entry;
 
   if ((e->length + 2) > e->size) {
@@ -164,23 +166,22 @@ void edit_insert(wchar_t ch) {
 
   if (Cursor.ex + 1 == scr_width) {
     Current->lines++;
-    oly = Current->ly;
-    Current->ly = (LINES / 2) - (Current->lines / 2);
-    if (oly != Current->ly)
-      Cursor.y--;
-    updmode = ALL;
+    update(ALL);
+    cursor_update();
+    cursor_recalc();
+    cursor_move(C_RIGHT);
+    wmove(scr_main, Cursor.y, Cursor.x);
+    wrefresh(scr_main);
+  } else {
+    cursor_update();
+    cursor_move(C_RIGHT);
+    update(CURRENT);
   }
-  cursor_update();
-  cursor_move(C_RIGHT);
-  update(updmode);
 }
 
 void edit_remove(int offset) {
   Entry *e;
-  update_t updmode;
-  int oly;
 
-  updmode = CURRENT;
   e = Current->entry;
 
   if (e->length == 0)
@@ -201,20 +202,23 @@ void edit_remove(int offset) {
 
   if (Cursor.ex == Cursor.lx) {
     Current->lines--;
-    oly = Current->ly;
-    Current->ly = (LINES / 2) - (Current->lines / 2);
-    if (oly != Current->ly)
-      Cursor.y++;
-    updmode = ALL;
+    update(ALL);
+    cursor_update();
+    if (offset == -1) {
+      Cursor.index++;
+      cursor_move(C_LEFT);
+    }
+    cursor_recalc();
+    wmove(scr_main, Cursor.y, Cursor.x);
+    wrefresh(scr_main);
+  } else {
+    cursor_update();
+    if (offset == -1) {
+      Cursor.index++;
+      cursor_move(C_LEFT);
+    }
+    update(CURRENT);
   }
-
-  cursor_update();
-  if (offset == -1) {
-    Cursor.index++;
-    cursor_move(C_LEFT);
-  }
-
-  update(updmode);
 }
 
 Result elmopen_new(Entry *e) {
