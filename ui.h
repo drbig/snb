@@ -4,7 +4,7 @@
 #define DLG_MIN_SPACE 32
 
 struct UI_File {
-  bool loaded, modified;
+  bool loaded;
   char *path;
 } UI_File;
 

@@ -33,7 +33,6 @@ int main(int argc, char *argv[]) {
     path = "test-data-1.txt";
   }
 
-  UI_File.modified = false;
   if (fp) {
     res = data_load(fp);
     UI_File.loaded = true;

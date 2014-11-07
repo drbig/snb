@@ -611,10 +611,6 @@ bool browse_do(int type, wchar_t input) {
       switch (input) {
         case L's':
           if (UI_File.loaded) {
-            if (!UI_File.modified) {
-              if (!dlg_bool(L" ASK ", L"File not modified, continue?", COLOR_WARN))
-                break;
-            }
             if (UI_File.path) {
               file_save();
             } else {
