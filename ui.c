@@ -104,7 +104,6 @@ void cursor_end() {
   Cursor.y = Cursor.ey;
   Cursor.x = Cursor.ex;
   Cursor.index = Current->entry->length;
-  //wmove(scr_main, Cursor.y, Cursor.x);
   cursor_fix();
 }
 
@@ -150,7 +149,6 @@ void cursor_move(cur_move_t dir) {
       }
       break;
   }
-  //wmove(scr_main, Cursor.y, Cursor.x);
   cursor_fix();
 }
 
@@ -219,14 +217,11 @@ void edit_insert(wchar_t ch) {
     cursor_update();
     cursor_recalc();
     cursor_move(C_RIGHT);
-    //cursor_fix();
-    //wmove(scr_main, Cursor.y, Cursor.x);
     wrefresh(scr_main);
   } else {
     update(CURRENT);
     cursor_update();
     cursor_move(C_RIGHT);
-    //cursor_fix();
     wrefresh(scr_main);
   }
 }
@@ -244,9 +239,6 @@ void edit_remove(int offset) {
 
   if ((offset == 0) && (Cursor.index == e->length))
     return;
-
-  //if ((offset == -1) && (Cursor.index == e->length))
-  //  Cursor.index--;
 
   wmemmove(e->text+Cursor.index+offset, e->text+Cursor.index+offset+1,
       e->length - Cursor.index);
