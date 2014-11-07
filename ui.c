@@ -211,9 +211,9 @@ void edit_insert(wchar_t ch) {
   if (Cursor.ex + 1 == scr_width) {
     Current->lines++;
     if (Partial.is) {
+      Partial.limit++;
       if (Cursor.x == scr_width)
         Partial.offset++;
-      Partial.limit++;
     }
     update(ALL);
     cursor_update();
@@ -256,10 +256,12 @@ void edit_remove(int offset) {
   if (Cursor.ex == Cursor.lx) {
     Current->lines--;
     if (Partial.is) {
-      Partial.offset--;
-      if (Partial.offset == 0)
-        Partial.less = false;
       Partial.limit--;
+      if (Partial.offset > 0) {
+        Partial.offset--;
+        if (Partial.offset == 0)
+          Partial.less = false;
+      }
     }
     update(ALL);
     cursor_update();
@@ -888,6 +890,7 @@ void update(update_t mode) {
             yy = y--;
             p = e->prev;
             while (yy >= 0) {
+              // this is semi-broken according to Valgrind
               mvwaddnwstr(scr_main, yy, p->lx + BULLET_WIDTH,
                   p->entry->text+((p->lines-(y-yy))*p->width), p->width);
               yy--;
