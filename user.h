@@ -23,11 +23,14 @@
 #define KEY_YES         L'y'
 #define KEY_NO          L'n'
 
-#define TXT_YESNO       L" y/n "
-#define TXT_INFO        L" INFO "
-#define TXT_ERROR       L" ERROR "
-#define TXT_LOAD        L" LOAD "
-#define TXT_SAVE        L" SAVE "
-#define TXT_SAVEAS      L" SAVE AS "
+#define DLG_YESNO       L" y/n "
+#define DLG_INFO        L" INFO "
+#define DLG_ERROR       L" ERROR "
+#define DLG_LOAD        L" LOAD "
+#define DLG_SAVE        L" SAVE "
+#define DLG_SAVEAS      L" SAVE AS "
+
+#define DLG_MSG_SAVE        L"Overwrite %s?"
+#define DLG_MSG_LOAD        L"Reload %s?"
 
 #endif

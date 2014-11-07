@@ -71,7 +71,9 @@ void dlg_simple(wchar_t *title, wchar_t *msg, int color);
 void dlg_error(wchar_t *msg);
 void dlg_info(wchar_t *msg);
 bool dlg_bool(wchar_t *title, wchar_t *msg, int color);
+bool dlg_file(wchar_t *title, wchar_t *fmt);
 bool dlg_save();
+bool dlg_load();
 void cursor_update();
 void cursor_home();
 void cursor_end();
@@ -106,15 +108,44 @@ void file_save() {
   if (dlg_save()) {
     msg = calloc(scr_width, sizeof(wchar_t));
     if (!(fp = fopen(UI_File.path, "w"))) {
-      swprintf(msg, scr_width, L"Didn't save: %s", strerror(errno));
+      swprintf(msg, scr_width, L"%s", strerror(errno));
       dlg_error(msg);
     } else {
       res = data_dump(Root->entry, fp);
       if (!res.success) {
-        fclose(fp);
-        swprintf(msg, scr_width, L"Didn't save: %S", res.msg);
+        swprintf(msg, scr_width, L"%S", res.msg);
         dlg_error(msg);
       }
+      fclose(fp);
+    }
+    free(msg);
+  }
+}
+
+void file_load() {
+  Result res;
+  wchar_t *msg;
+  FILE *fp;
+
+  if (dlg_load()) {
+    msg = calloc(scr_width, sizeof(wchar_t));
+    if (!(fp = fopen(UI_File.path, "r"))) {
+      swprintf(msg, scr_width, L"%s", strerror(errno));
+      dlg_error(msg);
+    } else {
+      res = data_load(fp);
+      if (res.success) {
+        res = ui_set_root((Entry *)res.data);
+        if (!res.success) {
+          swprintf(msg, scr_width, L"%S", res.msg);
+          dlg_error(msg);
+        }
+        ui_refresh();
+      } else {
+        swprintf(msg, scr_width, L"%S", res.msg);
+        dlg_error(msg);
+      }
+      fclose(fp);
     }
     free(msg);
   }
@@ -156,11 +187,11 @@ void dlg_simple(wchar_t *title, wchar_t *msg, int color) {
 }
 
 void dlg_error(wchar_t *msg) {
-  dlg_simple(TXT_ERROR, msg, COLOR_ERROR);
+  dlg_simple(DLG_ERROR, msg, COLOR_ERROR);
 }
 
 void dlg_info(wchar_t *msg) {
-  dlg_simple(TXT_INFO, msg, COLOR_INFO);
+  dlg_simple(DLG_INFO, msg, COLOR_INFO);
 }
 
 bool dlg_bool(wchar_t *title, wchar_t *msg, int color) {
@@ -170,15 +201,15 @@ bool dlg_bool(wchar_t *title, wchar_t *msg, int color) {
   int left, type;
 
   win = dlg_window(title, color);
-  left = scr_width - wcslen(TXT_YESNO) - 3;
+  left = scr_width - wcslen(DLG_YESNO) - 3;
   if (wcslen(title) < dlg_min)
     left -= wcslen(title);
   waddwstr(win, L" ");
   waddnwstr(win, msg, left);
   if (wcslen(msg) > left)
-    mvwaddwstr(win, 0, scr_width - wcslen(TXT_YESNO) - 2, TEXT_MORE);
+    mvwaddwstr(win, 0, scr_width - wcslen(DLG_YESNO) - 2, TEXT_MORE);
   wattron(win, COLOR_PAIR(COLOR_KEY));
-  mvwaddwstr(win, 0, scr_width - wcslen(TXT_YESNO), TXT_YESNO);
+  mvwaddwstr(win, 0, scr_width - wcslen(DLG_YESNO), DLG_YESNO);
   wattroff(win, COLOR_PAIR(COLOR_KEY));
   
   wrefresh(win);
@@ -201,18 +232,26 @@ bool dlg_bool(wchar_t *title, wchar_t *msg, int color) {
   return answer;
 }
 
-bool dlg_save() {
+bool dlg_file(wchar_t *title, wchar_t *fmt) {
   wchar_t *msg;
   char *fname;
   bool answer;
 
   msg = calloc(scr_width, sizeof(wchar_t));
   fname = basename(UI_File.path);
-  swprintf(msg, scr_width, L"Overwrite %s?", fname);
-  answer = dlg_bool(TXT_SAVE, msg, COLOR_WARN);
+  swprintf(msg, scr_width, fmt, fname);
+  answer = dlg_bool(title, msg, COLOR_WARN);
   free(msg);
   
   return answer;
+}
+
+bool dlg_save() {
+  return dlg_file(DLG_SAVE, DLG_MSG_SAVE);
+}
+
+bool dlg_load() {
+  return dlg_file(DLG_LOAD, DLG_MSG_LOAD);
 }
 
 void cursor_update() {
@@ -485,6 +524,7 @@ void elmopen_clear() {
     n = t->next;
     free(t);
     if (!n) break;
+    t = n;
   }
 
   ElmOpenRoot = ElmOpenLast = NULL;
@@ -609,6 +649,12 @@ bool browse_do(int type, wchar_t input) {
   switch (type) {
     case OK:
       switch (input) {
+        case L'r':
+          if (UI_File.loaded)
+            file_load(UI_File.path);
+          else
+            dlg_error(L"There is no file to reload.");
+          break;
         case L's':
           if (UI_File.loaded) {
             if (UI_File.path) {
@@ -835,7 +881,7 @@ bool browse_do(int type, wchar_t input) {
             update(ALL);
           }
           break;
-        case L'C':
+        case L'c':
           new = Current;
           while (new->level != 0) {
             new = new->prev;
@@ -850,7 +896,7 @@ bool browse_do(int type, wchar_t input) {
           Current = vitree_find(Root, o, FORWARD);
           update(ALL);
           break;
-        case L'O':
+        case L'e':
           o = Current->entry;
           elmopen_set(true, NULL, NULL);
           r = vitree_rebuild(Root, NULL);
