@@ -866,7 +866,8 @@ void update(update_t mode) {
       Partial.limit = Current->lines - LINES;
     }
 
-    wclear(scr_main);
+    if (mode == ALL)
+      wclear(scr_main);
     wmove(scr_main, 0, Current->lx);
     element_draw(Current);
   } else {
