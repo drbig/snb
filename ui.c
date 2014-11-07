@@ -53,14 +53,24 @@ static struct Partial {
   int offset, limit;
 } Partial;
 
+static struct File {
+  bool loaded, modified;
+  char *path;
+} File;
+
 static WINDOW *scr_main = NULL;
 static ElmOpen *ElmOpenRoot = NULL;
 static ElmOpen *ElmOpenLast = NULL;
 static Element *Root = NULL;
 static Element *Current = NULL;
 static ui_mode_t Mode = BROWSE;
-static int scr_width;
+static int scr_width, scr_x;
 
+WINDOW *dlg_window(wchar_t *title, int color);
+void dlg_simple(wchar_t *title, wchar_t *msg, int color);
+void dlg_error(wchar_t *msg);
+void dlg_info(wchar_t *msg);
+bool dlg_bool(wchar_t *title, wchar_t *msg, int color);
 void cursor_update();
 void cursor_home();
 void cursor_end();
@@ -86,6 +96,87 @@ Result ui_get_root();
 void ui_start();
 void ui_stop();
 void ui_mainloop();
+
+WINDOW *dlg_window(wchar_t *title, int color) {
+  WINDOW *win;
+
+  win = newwin(1, scr_width, LINES - 1, scr_x);
+  wclear(win);
+  wbkgd(win, COLOR_PAIR(color));
+  if (wcslen(title) < (scr_width - MIN_DLG_SPACE)) {
+    wattron(win, A_BOLD | A_REVERSE);
+    waddwstr(win, title);
+    wattroff(win, A_BOLD | A_REVERSE);
+  }
+
+  return win;
+}
+
+void dlg_simple(wchar_t *title, wchar_t *msg, int color) {
+  WINDOW *win;
+  int left;
+
+  win = dlg_window(title, color);
+  left = scr_width - 2;
+  if (sizeof(title) < (scr_width - MIN_DLG_SPACE))
+    left -= sizeof(title);
+  waddwstr(win, L" ");
+  waddnwstr(win, msg, left);
+  if (wcslen(msg) > left)
+    mvwaddwstr(win, 0, scr_width - 2, TEXT_MORE);
+
+  wrefresh(win);
+  getch();
+  delwin(win);
+  wredrawln(scr_main, LINES - 1, LINES - 1);
+  wrefresh(scr_main);
+}
+
+void dlg_error(wchar_t *msg) {
+  dlg_simple(TXT_ERROR, msg, COLOR_ERROR);
+}
+
+void dlg_info(wchar_t *msg) {
+  dlg_simple(TXT_INFO, msg, COLOR_INFO);
+}
+
+bool dlg_bool(wchar_t *title, wchar_t *msg, int color) {
+  WINDOW *win;
+  bool answer;
+  wchar_t input;
+  int left, type;
+
+  win = dlg_window(title, color);
+  left = scr_width - sizeof(TXT_YESNO) - 3;
+  if (sizeof(title) < (scr_width - MIN_DLG_SPACE))
+    left -= sizeof(title);
+  waddwstr(win, L" ");
+  waddnwstr(win, msg, left);
+  if (wcslen(msg) > left)
+    mvwaddwstr(win, 0, scr_width - sizeof(TXT_YESNO) - 3, TEXT_MORE);
+  wattron(win, COLOR_PAIR(COLOR_KEY));
+  mvwaddwstr(win, 0, scr_width - (sizeof(TXT_YESNO)/sizeof(wchar_t)) + 1, TXT_YESNO);
+  wattroff(win, COLOR_PAIR(COLOR_KEY));
+  
+  wrefresh(win);
+  while (true) {
+    type = get_wch((wint_t *)&input);
+    if (type == KEY_TYPE) {
+      if (input == KEY_YES) {
+        answer = true;
+        break;
+      } else if (input == KEY_NO) {
+        answer = false;
+        break;
+      }
+    }
+  }
+  delwin(win);
+  wredrawln(scr_main, LINES - 1, LINES - 1);
+  wrefresh(scr_main);
+
+  return answer;
+}
 
 void cursor_update() {
   Cursor.lx = Current->lx + BULLET_WIDTH;
@@ -197,8 +288,10 @@ void edit_insert(wchar_t ch) {
 
   if ((e->length + 2) > e->size) {
     e->size += scr_width;
-    if (!(new = realloc(e->text, e->size * sizeof(wchar_t))))
-      exit(99); // crutch
+    if (!(new = realloc(e->text, e->size * sizeof(wchar_t)))) {
+      dlg_error(L"Couldn't realloc Entry text buffer");
+      return;
+    }
     e->text = new;
   }
   wmemmove(e->text+Cursor.index+1, e->text+Cursor.index, e->length - Cursor.index);
@@ -469,9 +562,10 @@ void vitree_clear(Element *s, Element *e) {
 }
 
 bool browse_do(int type, wchar_t input) {
-  Result res;
+  Result res, r;
   Element *new;
   Entry *c, *o, *oo;
+  bool answer;
 
   new = NULL;
   o = NULL;
@@ -479,13 +573,28 @@ bool browse_do(int type, wchar_t input) {
   switch (type) {
     case OK:
       switch (input) {
+        case L'i':
+          res = entry_insert(c, AFTER, scr_width);
+          if (res.success) {
+            o = (Entry *)res.data;
+            o->length = 0;
+            r = vitree_rebuild(Current, vitree_find(Current, c->next, FORWARD));
+            if (!r.success) {
+              dlg_error(r.msg);
+              break;
+            }
+            Current = vitree_find(Current, o, FORWARD);
+            update(ALL);
+          } else {
+            dlg_error(res.msg);
+            break;
+          }
         case L'\n':
           Mode = EDIT;
           update(CURRENT);
           curs_set(true); 
           cursor_update();
           cursor_end();
-          cursor_fix();
           wrefresh(scr_main);
           break;
         case L'Q':
@@ -506,26 +615,18 @@ bool browse_do(int type, wchar_t input) {
               new = Root;
             } else
               new = Current->prev;
-            vitree_rebuild(new, Current->next);
+            r = vitree_rebuild(new, Current->next);
+            if (!r.success) {
+              dlg_error(r.msg);
+              break;
+            }
             Current = vitree_find(Root, (Entry *)res.data, FORWARD);
             if (Current->next == Current) {
               Root->next = Root->prev = NULL;
             }
             update(ALL);
           } else {
-            // tempoarary crutch
-          }
-          break;
-        case L'i':
-          res = entry_insert(c, AFTER, scr_width);
-          if (res.success) {
-            o = (Entry *)res.data;
-            o->length = 0;
-            vitree_rebuild(Current, vitree_find(Current, c->next, FORWARD));
-            Current = vitree_find(Current, o, FORWARD);
-            update(ALL);
-          } else {
-            // temporary crutch
+            dlg_error(res.msg);
           }
           break;
         case L'h':
@@ -535,7 +636,11 @@ bool browse_do(int type, wchar_t input) {
               o = c->next;
             else if (c->parent)
               o = c->parent->next;
-            vitree_rebuild(Current, vitree_find(Current, o, FORWARD));
+            r = vitree_rebuild(Current, vitree_find(Current, o, FORWARD));
+            if (!r.success) {
+              dlg_error(r.msg);
+              break;
+            }
             new = Current;
           } else if (c->parent)
             new = vitree_find(Current, c->parent, BACKWARD);
@@ -585,7 +690,11 @@ bool browse_do(int type, wchar_t input) {
             new = Current->next;
           else if (c->child) {
             Current->open->is = true;
-            vitree_rebuild(Current, Current->next);
+            r = vitree_rebuild(Current, Current->next);
+            if (!r.success) {
+              dlg_error(r.msg);
+              break;
+            }
             new = Current;
           }
           if (new) {
@@ -599,7 +708,11 @@ bool browse_do(int type, wchar_t input) {
           if (o)
             o = o->next;
           if (entry_indent(c, LEFT)) {
-            vitree_rebuild(Root, vitree_find(Root, o, FORWARD));
+            r = vitree_rebuild(Root, vitree_find(Root, o, FORWARD));
+            if (!r.success) {
+              dlg_error(r.msg);
+              break;
+            }
             Current = vitree_find(Root, c, FORWARD);
             update(ALL);
           }
@@ -617,7 +730,11 @@ bool browse_do(int type, wchar_t input) {
               o = c->parent->next;
             else
               o = c->next;
-            vitree_rebuild(Root, vitree_find(Current, o, FORWARD));
+            r = vitree_rebuild(Root, vitree_find(Current, o, FORWARD));
+            if (!r.success) {
+              dlg_error(r.msg);
+              break;
+            }
             Current = vitree_find(Root, c, FORWARD);
             update(ALL);
           }
@@ -634,7 +751,11 @@ bool browse_do(int type, wchar_t input) {
               o = c->parent->next;
             else
               o = c->next;
-            vitree_rebuild(Root, vitree_find(Current, o, FORWARD));
+            r = vitree_rebuild(Root, vitree_find(Current, o, FORWARD));
+            if (!r.success) {
+              dlg_error(r.msg);
+              break;
+            }
             Current = vitree_find(Root, c, FORWARD);
             update(ALL);
           }
@@ -648,7 +769,11 @@ bool browse_do(int type, wchar_t input) {
           if (entry_indent(c, RIGHT)) {
             new = vitree_find(Root, o, FORWARD);
             new->open->is = true;
-            vitree_rebuild(new, vitree_find(Root, oo, FORWARD));
+            r = vitree_rebuild(new, vitree_find(Root, oo, FORWARD));
+            if (!r.success) {
+              dlg_error(r.msg);
+              break;
+            }
             Current = vitree_find(Root, c, FORWARD);
             update(ALL);
           }
@@ -672,14 +797,22 @@ bool browse_do(int type, wchar_t input) {
           }
           o = new->entry;
           elmopen_set(false, NULL, NULL);
-          vitree_rebuild(Root, NULL);
+          r = vitree_rebuild(Root, NULL);
+          if (!r.success) {
+            dlg_error(r.msg);
+            break;
+          }
           Current = vitree_find(Root, o, FORWARD);
           update(ALL);
           break;
         case L'O':
           o = Current->entry;
           elmopen_set(true, NULL, NULL);
-          vitree_rebuild(Root, NULL);
+          r = vitree_rebuild(Root, NULL);
+          if (!r.success) {
+            dlg_error(r.msg);
+            break;
+          }
           Current = vitree_find(Root, o, FORWARD);
           update(ALL);
           break;
@@ -687,6 +820,12 @@ bool browse_do(int type, wchar_t input) {
       break;
     case KEY_CODE_YES:
       switch (input) {
+        case KEY_F(1):
+          dlg_info(L"This is a test info, be happy!");
+          break;
+        case KEY_F(2):
+          answer = dlg_bool(L" SAVE ", L"Sure to dumpt data to somefile.txt?", COLOR_WARN);
+          break;
       }
       break;
   }
@@ -936,8 +1075,6 @@ Result ui_get_root() {
 }
 
 void ui_start() {
-  int start_x;
-
   initscr();
   start_color();
   cbreak();
@@ -951,8 +1088,8 @@ void ui_start() {
     delwin(scr_main);
 
   scr_width = COLS < SCR_WIDTH ? (COLS - 2) : SCR_WIDTH;
-  start_x = ((COLS - scr_width) / 2) - 1;
-  scr_main = newwin(LINES, scr_width, 0, start_x);
+  scr_x = ((COLS - scr_width) / 2) - 1;
+  scr_main = newwin(LINES, scr_width, 0, scr_x);
 
   clear();
   refresh();
@@ -978,7 +1115,7 @@ void ui_mainloop() {
   while (run) {
     type = get_wch((wint_t *)&input);
     if (type == ERR) {
-      exit(7); // temporary crutch
+      dlg_error(L"Error reading keyboard?");
     } else {
       switch (Mode) {
         case BROWSE:
