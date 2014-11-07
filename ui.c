@@ -4,6 +4,8 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
+#include <errno.h>
+#include <libgen.h>
 #include <string.h>
 #include <wchar.h>
 #include <wctype.h>
@@ -53,11 +55,6 @@ static struct Partial {
   int offset, limit;
 } Partial;
 
-static struct File {
-  bool loaded, modified;
-  char *path;
-} File;
-
 static WINDOW *scr_main = NULL;
 static ElmOpen *ElmOpenRoot = NULL;
 static ElmOpen *ElmOpenLast = NULL;
@@ -67,11 +64,14 @@ static ui_mode_t Mode = BROWSE;
 static int scr_width, scr_x;
 static int dlg_min;
 
+void file_save();
+void file_load();
 WINDOW *dlg_window(wchar_t *title, int color);
 void dlg_simple(wchar_t *title, wchar_t *msg, int color);
 void dlg_error(wchar_t *msg);
 void dlg_info(wchar_t *msg);
 bool dlg_bool(wchar_t *title, wchar_t *msg, int color);
+bool dlg_save();
 void cursor_update();
 void cursor_home();
 void cursor_end();
@@ -97,6 +97,28 @@ Result ui_get_root();
 void ui_start();
 void ui_stop();
 void ui_mainloop();
+
+void file_save() {
+  Result res;
+  wchar_t *msg;
+  FILE *fp;
+
+  if (dlg_save()) {
+    msg = calloc(scr_width, sizeof(wchar_t));
+    if (!(fp = fopen(UI_File.path, "w"))) {
+      swprintf(msg, scr_width, L"Didn't save: %s", strerror(errno));
+      dlg_error(msg);
+    } else {
+      res = data_dump(Root->entry, fp);
+      if (!res.success) {
+        fclose(fp);
+        swprintf(msg, scr_width, L"Didn't save: %S", res.msg);
+        dlg_error(msg);
+      }
+    }
+    free(msg);
+  }
+}
 
 WINDOW *dlg_window(wchar_t *title, int color) {
   WINDOW *win;
@@ -176,6 +198,20 @@ bool dlg_bool(wchar_t *title, wchar_t *msg, int color) {
   wredrawln(scr_main, LINES - 1, LINES - 1);
   wrefresh(scr_main);
 
+  return answer;
+}
+
+bool dlg_save() {
+  wchar_t *msg;
+  char *fname;
+  bool answer;
+
+  msg = calloc(scr_width, sizeof(wchar_t));
+  fname = basename(UI_File.path);
+  swprintf(msg, scr_width, L"Overwrite %s?", fname);
+  answer = dlg_bool(TXT_SAVE, msg, COLOR_WARN);
+  free(msg);
+  
   return answer;
 }
 
@@ -566,7 +602,6 @@ bool browse_do(int type, wchar_t input) {
   Result res, r;
   Element *new;
   Entry *c, *o, *oo;
-  bool answer;
 
   new = NULL;
   o = NULL;
@@ -574,6 +609,19 @@ bool browse_do(int type, wchar_t input) {
   switch (type) {
     case OK:
       switch (input) {
+        case L's':
+          if (UI_File.loaded) {
+            if (!UI_File.modified) {
+              if (!dlg_bool(L" ASK ", L"File not modified, continue?", COLOR_WARN))
+                break;
+            }
+            if (UI_File.path) {
+              file_save();
+            } else {
+              dlg_error(L"No save as yet, sorry.");
+            }
+          }
+          break;
         case L'i':
           res = entry_insert(c, AFTER, scr_width);
           if (res.success) {
@@ -825,7 +873,10 @@ bool browse_do(int type, wchar_t input) {
           dlg_info(L"This is a test info, be happy!");
           break;
         case KEY_F(2):
-          answer = dlg_bool(L" SAVE ", L"Sure to dump data to somefile.txt?", COLOR_WARN);
+          if (dlg_save())
+            dlg_info(L"You've answered yes!");
+          else
+            dlg_info(L"You've answered no!");
           break;
       }
       break;

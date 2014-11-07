@@ -1,6 +1,7 @@
 #define _GNU_SOURCE
 #define _XOPEN_SOURCE_EXTENDED 1
 
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -16,6 +17,7 @@
 int main(int argc, char *argv[]) {
   FILE *fp;
   Result res;
+  char *path;
   
   setlocale(LC_ALL, "");
 
@@ -25,14 +27,27 @@ int main(int argc, char *argv[]) {
       perror("Can't open your file");
       exit(1);
     }
-  } else
+    path = argv[1];
+  } else {
     fp = fopen("test-data-1.txt", "r");
+    path = "test-data-1.txt";
+  }
 
+  UI_File.modified = false;
   if (fp) {
     res = data_load(fp);
+    UI_File.loaded = true;
+    UI_File.path = realpath(path, NULL);
+    if (!UI_File.path) {
+      perror("Couldn't resolve path");
+      exit(3);
+    }
     fclose(fp);
-  } else
+  } else {
     res = entry_new(80);
+    UI_File.loaded = false;
+    UI_File.path = NULL;
+  }
 
   if (!res.success) {
     fwprintf(stderr, L"ERROR: %S.\n", res.msg);
