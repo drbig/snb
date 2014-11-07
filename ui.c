@@ -879,10 +879,9 @@ void update(update_t mode) {
             y -= e->lines;
           }
           if ((y - 1 >= 0) && (e->prev)) {
-            yy = y--;
+            yy = y - 1;
             p = e->prev;
             while (yy >= 0) {
-              // this is semi-broken according to Valgrind
               mvwaddnwstr(scr_main, yy, p->lx + BULLET_WIDTH,
                   p->entry->text+((p->lines-(y-yy))*p->width), p->width);
               yy--;
