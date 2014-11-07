@@ -65,6 +65,7 @@ static Element *Root = NULL;
 static Element *Current = NULL;
 static ui_mode_t Mode = BROWSE;
 static int scr_width, scr_x;
+static int dlg_min;
 
 WINDOW *dlg_window(wchar_t *title, int color);
 void dlg_simple(wchar_t *title, wchar_t *msg, int color);
@@ -103,7 +104,7 @@ WINDOW *dlg_window(wchar_t *title, int color) {
   win = newwin(1, scr_width, LINES - 1, scr_x);
   wclear(win);
   wbkgd(win, COLOR_PAIR(color));
-  if (wcslen(title) < (scr_width - MIN_DLG_SPACE)) {
+  if (wcslen(title) < dlg_min) {
     wattron(win, A_BOLD | A_REVERSE);
     waddwstr(win, title);
     wattroff(win, A_BOLD | A_REVERSE);
@@ -118,8 +119,8 @@ void dlg_simple(wchar_t *title, wchar_t *msg, int color) {
 
   win = dlg_window(title, color);
   left = scr_width - 2;
-  if (sizeof(title) < (scr_width - MIN_DLG_SPACE))
-    left -= sizeof(title);
+  if (wcslen(title) < dlg_min)
+    left -= wcslen(title);
   waddwstr(win, L" ");
   waddnwstr(win, msg, left);
   if (wcslen(msg) > left)
@@ -147,15 +148,15 @@ bool dlg_bool(wchar_t *title, wchar_t *msg, int color) {
   int left, type;
 
   win = dlg_window(title, color);
-  left = scr_width - sizeof(TXT_YESNO) - 3;
-  if (sizeof(title) < (scr_width - MIN_DLG_SPACE))
-    left -= sizeof(title);
+  left = scr_width - wcslen(TXT_YESNO) - 3;
+  if (wcslen(title) < dlg_min)
+    left -= wcslen(title);
   waddwstr(win, L" ");
   waddnwstr(win, msg, left);
   if (wcslen(msg) > left)
-    mvwaddwstr(win, 0, scr_width - sizeof(TXT_YESNO) - 3, TEXT_MORE);
+    mvwaddwstr(win, 0, scr_width - wcslen(TXT_YESNO) - 2, TEXT_MORE);
   wattron(win, COLOR_PAIR(COLOR_KEY));
-  mvwaddwstr(win, 0, scr_width - (sizeof(TXT_YESNO)/sizeof(wchar_t)) + 1, TXT_YESNO);
+  mvwaddwstr(win, 0, scr_width - wcslen(TXT_YESNO), TXT_YESNO);
   wattroff(win, COLOR_PAIR(COLOR_KEY));
   
   wrefresh(win);
@@ -824,7 +825,7 @@ bool browse_do(int type, wchar_t input) {
           dlg_info(L"This is a test info, be happy!");
           break;
         case KEY_F(2):
-          answer = dlg_bool(L" SAVE ", L"Sure to dumpt data to somefile.txt?", COLOR_WARN);
+          answer = dlg_bool(L" SAVE ", L"Sure to dump data to somefile.txt?", COLOR_WARN);
           break;
       }
       break;
@@ -1090,6 +1091,9 @@ void ui_start() {
   scr_width = COLS < SCR_WIDTH ? (COLS - 2) : SCR_WIDTH;
   scr_x = ((COLS - scr_width) / 2) - 1;
   scr_main = newwin(LINES, scr_width, 0, scr_x);
+  dlg_min = scr_width - DLG_MIN_SPACE;
+  if (dlg_min < 0)
+    dlg_min = 0;
 
   clear();
   refresh();
