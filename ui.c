@@ -259,9 +259,10 @@ bool dlg_load() {
 
 char *dlg_file_path(wchar_t *title, int color) {
   WINDOW *win;
-  wchar_t input, *wpath;
+  wchar_t input, *wpath, *empty;
   char *path;
-  int left, type, cursor, len;
+  int left, type, cursor, len, start;
+  bool refresh;
  
   win = dlg_window(title, color);
   left = scr_width - 2;
@@ -269,6 +270,11 @@ char *dlg_file_path(wchar_t *title, int color) {
     left -= wcslen(title);
   waddwstr(win, L" ");
 
+  empty = calloc(left + 2, sizeof(wchar_t));
+  for (cursor = 0; cursor <= left; cursor++)
+    empty[cursor] = L' ';
+  empty[left+1] = L'\0';
+  
   wpath = calloc(PATH_MAX, sizeof(wchar_t));
   if (UI_File.loaded)
     swprintf(wpath, PATH_MAX, L"%s", UI_File.path);
@@ -278,26 +284,47 @@ char *dlg_file_path(wchar_t *title, int color) {
     free(path);
   }
 
+  start = scr_width - left - 1;
   cursor = len = wcslen(wpath);
-  if (cursor > left) {
-    waddwstr(win, TEXT_MORE);
-    waddwstr(win, wpath+(cursor-left)+1);
-  } else
-    waddwstr(win, wpath);
+  refresh = true;
   curs_set(true);
 
-  wrefresh(win);
   while (true) {
+    if (refresh) {
+      mvwaddwstr(win, 0, start, empty);
+      mvwaddnwstr(win, 0, start, wpath+(cursor-(cursor % left)), left);
+      refresh = false;
+    }
+    wmove(win, 0, start + (cursor % left));
+    wrefresh(win);
+
     type = get_wch((wint_t *)&input);
-    if (type == KEY_TYPE) {
-      if (input == KEY_YES) {
+    switch (type) {
+      case KEY_CODE_YES:
+        switch (input) {
+          case KEY_LEFT:
+            if (cursor % left == 0)
+              refresh = true;
+            cursor--;
+            if (cursor < 0)
+              cursor = 0;
+            break;
+          case KEY_RIGHT:
+            cursor++;
+            if (cursor % left == 0)
+              refresh = true;
+            if (cursor > len)
+              cursor = len;
+            break;
+        }
         break;
-      } else if (input == KEY_NO) {
+      case OK:
         break;
-      }
     }
   }
   curs_set(false);
+  free(wpath);
+  free(empty);
   delwin(win);
   wredrawln(scr_main, LINES - 1, LINES - 1);
   wrefresh(scr_main);
