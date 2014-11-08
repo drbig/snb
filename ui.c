@@ -270,12 +270,18 @@ char *dlg_file_path(wchar_t *title, int color) {
     left -= wcslen(title);
   waddwstr(win, L" ");
 
-  empty = calloc(left + 2, sizeof(wchar_t));
+  if (!(empty = calloc(left + 2, sizeof(wchar_t)))) {
+    dlg_error(L"Can't allocate empty");
+    return NULL;
+  }
   for (cursor = 0; cursor <= left; cursor++)
     empty[cursor] = L' ';
   empty[left+1] = L'\0';
   
-  wpath = calloc(PATH_MAX, sizeof(wchar_t));
+  if (!(wpath = calloc(PATH_MAX, sizeof(wchar_t)))) {
+    dlg_error(L"Can't allocate wpath");
+    return NULL;
+  }
   if (UI_File.loaded)
     swprintf(wpath, PATH_MAX, L"%s", UI_File.path);
   else {
@@ -316,9 +322,52 @@ char *dlg_file_path(wchar_t *title, int color) {
             if (cursor > len)
               cursor = len;
             break;
+          case KEY_HOME:
+            cursor = 0;
+            refresh = true;
+            break;
+          case KEY_END:
+            cursor = len;
+            refresh = true;
+            break;
+          case KEY_DC:
+            if (cursor == len)
+              break;
+            wmemmove(wpath+cursor, wpath+cursor+1, len - cursor - 1);
+            wpath[len-1] = L'\0';
+            len--;
+            refresh = true;
+            break;
+          case 263:
+          case 127:
+          case 8:
+            if (cursor == 0)
+              break;
+            wmemmove(wpath+cursor-1, wpath+cursor, len - cursor);
+            wpath[len-1] = L'\0';
+            cursor--;
+            len--;
+            refresh = true;
+            break;
         }
         break;
       case OK:
+        switch (input) {
+          default:
+            if (iswprint(input)) {
+              if (len + 1 == PATH_MAX) {
+                dlg_error(L"Too long path");
+                break;
+              }
+              wmemmove(wpath+cursor+1, wpath+cursor, len - cursor);
+              len++;
+              wpath[cursor] = input;
+              wpath[len] = L'\0';
+              cursor++;
+              refresh = true;
+            }
+            break;
+        }
         break;
     }
   }
