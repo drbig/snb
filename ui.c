@@ -6,7 +6,9 @@
 
 #include <errno.h>
 #include <libgen.h>
+#include <limits.h>
 #include <string.h>
+#include <unistd.h>
 #include <wchar.h>
 #include <wctype.h>
 #include <ncurses.h>
@@ -74,6 +76,7 @@ bool dlg_bool(wchar_t *title, wchar_t *msg, int color);
 bool dlg_file(wchar_t *title, wchar_t *fmt);
 bool dlg_save();
 bool dlg_load();
+char *dlg_file_path(wchar_t *title, int color);
 void cursor_update();
 void cursor_home();
 void cursor_end();
@@ -252,6 +255,54 @@ bool dlg_save() {
 
 bool dlg_load() {
   return dlg_file(DLG_LOAD, DLG_MSG_LOAD);
+}
+
+char *dlg_file_path(wchar_t *title, int color) {
+  WINDOW *win;
+  wchar_t input, *wpath;
+  char *path;
+  int left, type, cursor, len;
+ 
+  win = dlg_window(title, color);
+  left = scr_width - 2;
+  if (wcslen(title) < dlg_min)
+    left -= wcslen(title);
+  waddwstr(win, L" ");
+
+  wpath = calloc(PATH_MAX, sizeof(wchar_t));
+  if (UI_File.loaded)
+    swprintf(wpath, PATH_MAX, L"%s", UI_File.path);
+  else {
+    path = get_current_dir_name();
+    swprintf(wpath, PATH_MAX, L"%s", path);
+    free(path);
+  }
+
+  cursor = len = wcslen(wpath);
+  if (cursor > left) {
+    waddwstr(win, TEXT_MORE);
+    waddwstr(win, wpath+(cursor-left)+1);
+  } else
+    waddwstr(win, wpath);
+  curs_set(true);
+
+  wrefresh(win);
+  while (true) {
+    type = get_wch((wint_t *)&input);
+    if (type == KEY_TYPE) {
+      if (input == KEY_YES) {
+        break;
+      } else if (input == KEY_NO) {
+        break;
+      }
+    }
+  }
+  curs_set(false);
+  delwin(win);
+  wredrawln(scr_main, LINES - 1, LINES - 1);
+  wrefresh(scr_main);
+
+  return path;
 }
 
 void cursor_update() {
@@ -664,6 +715,9 @@ bool browse_do(int type, wchar_t input) {
             }
           }
           break;
+        case L'S':
+          dlg_file_path(DLG_SAVEAS, COLOR_WARN);
+          break;
         case L'i':
           res = entry_insert(c, AFTER, scr_width);
           if (res.success) {
@@ -700,10 +754,10 @@ bool browse_do(int type, wchar_t input) {
           if (res.success) {
             elmopen_forget(c);
             if (Current == Root) {
+              new = Current->next;
+              new->prev = NULL;
               free(Root);
-              Root = Current->next;
-              Root->prev = NULL;
-              new = Root;
+              Root = Current = new;
             } else
               new = Current->prev;
             r = vitree_rebuild(new, Current->next);
