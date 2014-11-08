@@ -67,6 +67,7 @@ static int scr_width, scr_x;
 static int dlg_min;
 
 void file_save();
+void file_save_as();
 void file_load();
 WINDOW *dlg_window(wchar_t *title, int color);
 void dlg_simple(wchar_t *title, wchar_t *msg, int color);
@@ -118,6 +119,35 @@ void file_save() {
       if (!res.success) {
         swprintf(msg, scr_width, L"%S", res.msg);
         dlg_error(msg);
+      }
+      fclose(fp);
+    }
+    free(msg);
+  }
+}
+
+void file_save_as() {
+  Result res;
+  wchar_t *msg;
+  char *path;
+  FILE *fp;
+
+  if ((path = dlg_file_path(DLG_SAVEAS, COLOR_WARN))) {
+    msg = calloc(scr_width, sizeof(wchar_t));
+    if (!(fp = fopen(path, "w"))) {
+      swprintf(msg, scr_width, L"%s", strerror(errno));
+      free(path);
+      dlg_error(msg);
+    } else {
+      res = data_dump(Root->entry, fp);
+      if (!res.success) {
+        swprintf(msg, scr_width, L"%S", res.msg);
+        free(path);
+        dlg_error(msg);
+      } else {
+        UI_File.path = path;
+        UI_File.loaded = true;
+        dlg_info(L"Saved!");
       }
       fclose(fp);
     }
@@ -379,10 +409,13 @@ char *dlg_file_path(wchar_t *title, int color) {
                 run = dlg_bool(DLG_SAVEAS, DLG_MSG_INVALID, COLOR_ERROR);
               } else {
                 if (access(path, F_OK) == 0) {
-                  run = dlg_bool(DLG_SAVEAS, DLG_MSG_EXISTS, COLOR_ERROR);
+                  run = !dlg_bool(DLG_SAVEAS, DLG_MSG_EXISTS, COLOR_ERROR);
+                  if (!run)
+                    ok = true;
                 } else {
                   if ((access(path, W_OK) == 0) || (errno == ENOENT)) {
                     ok = true;
+                    run = false;
                   } else {
                     run = dlg_bool(DLG_SAVEAS, DLG_MSG_ERROR, COLOR_ERROR);
                   }
@@ -836,12 +869,14 @@ bool browse_do(int type, wchar_t input) {
             if (UI_File.path) {
               file_save();
             } else {
-              dlg_error(L"No save as yet, sorry.");
+              //dlg_error(L"No save as yet, sorry.");
+              file_save_as();
             }
           }
           break;
         case L'S':
-          dlg_file_path(DLG_SAVEAS, COLOR_WARN);
+          //dlg_file_path(DLG_SAVEAS, COLOR_WARN);
+          file_save_as();
           break;
         case L'i':
           res = entry_insert(c, AFTER, scr_width);
