@@ -75,6 +75,7 @@ int main(int argc, char *argv[]) {
   }
 
   data_unload((Entry *)res.data);
+  free(UI_File.path);
 
   return 0;
 }

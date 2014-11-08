@@ -157,7 +157,10 @@ void file_load() {
 WINDOW *dlg_window(wchar_t *title, int color) {
   WINDOW *win;
 
-  win = newwin(1, scr_width, LINES - 1, scr_x);
+  if (!(win = newwin(1, scr_width, LINES - 1, scr_x))) {
+    fwprintf(stderr, L"Can't make a new dialog window\n");
+    exit(1);
+  }
   wclear(win);
   wbkgd(win, COLOR_PAIR(color));
   if (wcslen(title) < dlg_min) {
@@ -260,42 +263,53 @@ bool dlg_load() {
 char *dlg_file_path(wchar_t *title, int color) {
   WINDOW *win;
   wchar_t input, *wpath, *empty;
-  char *path;
+  char *path, *dname;
   int left, type, cursor, len, start;
-  bool refresh;
- 
+  bool run, refresh, ok;
+
+  wpath = empty = NULL;
+  path = dname = NULL;
+
   win = dlg_window(title, color);
   left = scr_width - 2;
   if (wcslen(title) < dlg_min)
     left -= wcslen(title);
   waddwstr(win, L" ");
 
+  if (!(path = malloc(PATH_MAX))) {
+    dlg_error(L"Can't allocate path");
+    goto error;
+  }
+
+  if (!(wpath = calloc(PATH_MAX, sizeof(wchar_t)))) {
+    dlg_error(L"Can't allocate wpath");
+    goto error;
+  }
+
   if (!(empty = calloc(left + 2, sizeof(wchar_t)))) {
     dlg_error(L"Can't allocate empty");
-    return NULL;
+    goto error;
   }
+
   for (cursor = 0; cursor <= left; cursor++)
     empty[cursor] = L' ';
   empty[left+1] = L'\0';
   
-  if (!(wpath = calloc(PATH_MAX, sizeof(wchar_t)))) {
-    dlg_error(L"Can't allocate wpath");
-    return NULL;
-  }
   if (UI_File.loaded)
     swprintf(wpath, PATH_MAX, L"%s", UI_File.path);
   else {
-    path = get_current_dir_name();
+    if (!getcwd(path, PATH_MAX))
+      sprintf(path, "/home/");
     swprintf(wpath, PATH_MAX, L"%s", path);
-    free(path);
   }
 
   start = scr_width - left - 1;
   cursor = len = wcslen(wpath);
-  refresh = true;
+  run = refresh = true;
+  ok = false;
   curs_set(true);
 
-  while (true) {
+  while (run) {
     if (refresh) {
       mvwaddwstr(win, 0, start, empty);
       mvwaddnwstr(win, 0, start, wpath+(cursor-(cursor % left)), left);
@@ -353,6 +367,29 @@ char *dlg_file_path(wchar_t *title, int color) {
         break;
       case OK:
         switch (input) {
+          case L'\n':
+            if (wcstombs(path, wpath, PATH_MAX) == -1) {
+              dlg_error(L"Couldn't convert path");
+              run = false;
+            } else {
+              dname = malloc(strlen(path));
+              strcpy(dname, path);
+              dname = dirname(dname);
+              if (access(dname, F_OK) == -1) {
+                run = dlg_bool(DLG_SAVEAS, DLG_MSG_INVALID, COLOR_ERROR);
+              } else {
+                if (access(path, F_OK) == 0) {
+                  run = dlg_bool(DLG_SAVEAS, DLG_MSG_EXISTS, COLOR_ERROR);
+                } else {
+                  if ((access(path, W_OK) == 0) || (errno == ENOENT)) {
+                    ok = true;
+                  } else {
+                    run = dlg_bool(DLG_SAVEAS, DLG_MSG_ERROR, COLOR_ERROR);
+                  }
+                }
+              }
+            }
+            break;
           default:
             if (iswprint(input)) {
               if (len + 1 == PATH_MAX) {
@@ -372,13 +409,25 @@ char *dlg_file_path(wchar_t *title, int color) {
     }
   }
   curs_set(false);
-  free(wpath);
-  free(empty);
   delwin(win);
   wredrawln(scr_main, LINES - 1, LINES - 1);
+  free(dname);
+  free(wpath);
+  free(empty);
   wrefresh(scr_main);
 
-  return path;
+  if (ok)
+    return path;
+  else {
+    free(path);
+    return NULL;
+  }
+
+error:
+  if (path) free(path);
+  if (wpath) free(wpath);
+  if (empty) free(empty);
+  return NULL;
 }
 
 void cursor_update() {
@@ -1313,7 +1362,10 @@ void ui_start() {
 
   scr_width = COLS < SCR_WIDTH ? (COLS - 2) : SCR_WIDTH;
   scr_x = ((COLS - scr_width) / 2) - 1;
-  scr_main = newwin(LINES, scr_width, 0, scr_x);
+  if (!(scr_main = newwin(LINES, scr_width, 0, scr_x))) {
+    fwprintf(stderr, L"Can't make a new dialog window\n");
+    exit(1);
+  }
   dlg_min = scr_width - DLG_MIN_SPACE;
   if (dlg_min < 0)
     dlg_min = 0;
