@@ -67,7 +67,11 @@ Result data_load(FILE *input) {
     int level = 0;
     while ((line[level] == L'\t') && (level < length))
       level++;
-    if (level == length) {
+    if (level >= (length - 2)) {
+      ret = result_new(false, NULL, L"Malformed input at line %d", line_nr);
+      goto error;
+    }
+    if (!((line[level] == L'-') && (line[level+1] == L' '))) {
       ret = result_new(false, NULL, L"Malformed input at line %d", line_nr);
       goto error;
     }
@@ -107,11 +111,16 @@ Result data_load(FILE *input) {
       c = new;
     }
 
-    if (line[level] == L'~')
-      c->crossed = true;
+    if (length - level - 2 >= 4) {
+      if ((line[level+2] == L'~') && (line[level+3] == L'~') &&
+          (line[length-1] == L'~') && (line[length-2] == L'~')) {
+        c->crossed = true;
+        line[length-2] = L'\0';
+      }
+    }
 
-    c->length = length - level - c->crossed;
-    wcscpy(c->text, line+level+c->crossed);
+    c->length = length - level - (c->crossed * 4) - 2;
+    wcscpy(c->text, line+level+(2*c->crossed)+2);
 
     ++line_nr;
   }
@@ -151,9 +160,13 @@ Result data_dump(Entry *e, FILE *output) {
 
     for (t = level; t > 0; --t)
       if (fwprintf(output, L"\t") != 1) goto error;
+    if (fwprintf(output, L"- ") != 2) goto error;
     if (e->crossed)
-      if (fwprintf(output, L"~") != 1) goto error;
-    if (fwprintf(output, L"%S\n", e->text) != (e->length + 1)) goto error;
+      if (fwprintf(output, L"~~") != 2) goto error;
+    if (fwprintf(output, L"%S", e->text) != e->length) goto error;
+    if (e->crossed)
+      if (fwprintf(output, L"~~") != 2) goto error;
+    if (fwprintf(output, L"\n") != 1) goto error;
 
     if (e->child) {
       e = e->child;
