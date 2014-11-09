@@ -931,7 +931,8 @@ bool browse_do(int type, wchar_t input) {
           wrefresh(scr_main);
           break;
         case L'Q':
-          return false;
+          if (dlg_bool(DLG_QUIT, DLG_MSG_QUIT, COLOR_WARN))
+            return false;
           break;
         case L'd':
           Current->entry->crossed = !Current->entry->crossed;
@@ -1153,14 +1154,9 @@ bool browse_do(int type, wchar_t input) {
       break;
     case KEY_CODE_YES:
       switch (input) {
-        case KEY_F(1):
-          dlg_info(L"This is a test info, be happy!");
-          break;
-        case KEY_F(2):
-          if (dlg_save())
-            dlg_info(L"You've answered yes!");
-          else
-            dlg_info(L"You've answered no!");
+        case KEY_RESIZE:
+          ui_stop();
+          ui_start();
           break;
       }
       break;

@@ -30,6 +30,7 @@
 #define DLG_OPEN        L" OPEN "
 #define DLG_SAVE        L" SAVE "
 #define DLG_SAVEAS      L" SAVE AS "
+#define DLG_QUIT        L" QUIT "
 
 #define DLG_MSG_SAVE    L"Overwrite %s?"
 #define DLG_MSG_RELOAD  L"Reload %s?"
@@ -37,5 +38,6 @@
 #define DLG_MSG_EXISTS  L"Overwrite existing file?"
 #define DLG_MSG_INVALID L"Invalid directory, retry?"
 #define DLG_MSG_ERROR   L"File access error, retry?"
+#define DLG_MSG_QUIT    L"Sure to quit?"
 
 #endif
