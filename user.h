@@ -1,6 +1,9 @@
 #ifndef USER_H
 #define USER_H
 
+// snb.c
+//#define DEFAULT_FILE    "/path/to/the/file.md"
+
 // data.c
 #define LINE_MAX_LEN    4096
 #define ERR_MAX_LEN     512

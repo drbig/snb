@@ -3,11 +3,14 @@ CFLAGS=-Wall
 LDFLAGS=-lncursesw
 PRG=snb
 DEPS=data.o ui.o colors.o
-TESTS=data dupa
+VERSION=$$(git describe --tags --always --dirty --match "[0-9A-Z]*.[0-9A-Z]*")
 
 .PHONY: all clean debug
 
-all: $(PRG)
+version:
+	@echo "#define VERSION L\"$(VERSION)\"" > version.h
+
+all: version $(PRG)
 
 clean:
 	rm -f *.o $(PRG)

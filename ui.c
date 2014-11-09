@@ -17,6 +17,7 @@
 #include "data.h"
 #include "ui.h"
 #include "colors.h"
+#include "snb.h"
 
 typedef struct ElmOpen {
   Entry *entry;
@@ -82,6 +83,8 @@ bool dlg_reload();
 char *dlg_file_path(wchar_t *title, int color, dlg_file_path_t mode);
 char *dlg_save_as();
 char *dlg_open();
+void dlg_info_version();
+void dlg_info_file();
 void cursor_update();
 void cursor_home();
 void cursor_end();
@@ -485,6 +488,13 @@ char *dlg_save_as() {
 
 char *dlg_open() {
   return dlg_file_path(DLG_OPEN, COLOR_WARN, D_LOAD);
+}
+
+void dlg_info_version() {
+  dlg_simple(DLG_INFO, INFO_STR, COLOR_OK);
+}
+
+void dlg_info_file() {
 }
 
 void cursor_update() {
@@ -1157,6 +1167,9 @@ bool browse_do(int type, wchar_t input) {
         case KEY_RESIZE:
           ui_stop();
           ui_start();
+          break;
+        case KEY_F(2):
+          dlg_info_version();
           break;
       }
       break;

@@ -13,12 +13,15 @@
 #include "user.h"
 #include "data.h"
 #include "ui.h"
+#include "snb.h"
 
 int main(int argc, char *argv[]) {
   FILE *fp;
   Result res;
   char *path;
   
+  fp = NULL;
+
   setlocale(LC_ALL, "");
 
   if (argc > 1) {
@@ -28,10 +31,13 @@ int main(int argc, char *argv[]) {
       exit(1);
     }
     path = argv[1];
-  } else {
-    fp = fopen("test-data-1.txt", "r");
-    path = "test-data-1.txt";
   }
+#ifdef DEFAULT_FILE
+  else {
+    fp = fopen(DEFAULT_FILE, "r");
+    path = DEFAULT_FILE;
+  }
+#endif
 
   UI_File.path = NULL;
   if (fp) {
