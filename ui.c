@@ -392,6 +392,15 @@ char *dlg_file_path(wchar_t *title, int color, dlg_file_path_t mode) {
         break;
       case OK:
         switch (input) {
+          case 127:
+            if (cursor == 0)
+              break;
+            wmemmove(wpath+cursor-1, wpath+cursor, len - cursor);
+            wpath[len-1] = L'\0';
+            cursor--;
+            len--;
+            refresh = true;
+            break;
           case L'\n':
             if ((size = wcstombs(path, wpath, PATH_MAX)) == -1) {
               dlg_error(L"Couldn't convert path");
