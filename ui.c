@@ -495,6 +495,10 @@ void dlg_info_version() {
 }
 
 void dlg_info_file() {
+  if (UI_File.loaded)
+    dlg_simple(DLG_INFO, (wchar_t *)UI_File.path, COLOR_OK);
+  else
+    dlg_simple(DLG_INFO, L"No file loaded.", COLOR_OK);
 }
 
 void cursor_update() {
@@ -904,17 +908,20 @@ bool browse_do(int type, wchar_t input) {
             if (dlg_reload())
               file_load(UI_File.path);
           } else
-            dlg_error(L"There is no file to reload.");
+            dlg_error(DLG_ERR_RELOAD);
           break;
         case L's':
           if (UI_File.loaded) {
             if (dlg_save())
               file_save(UI_File.path);
-            break;
-          }
+          } else
+            dlg_error(DLG_ERR_SAVE);
+          break;
         case L'S':
-          if ((path = dlg_save_as()) != NULL)
-            file_save(path);
+          if (dlg_bool(DLG_SAVE, DLG_MSG_SAVEAS, COLOR_WARN)) {
+            if ((path = dlg_save_as()) != NULL)
+              file_save(path);
+          }
           break;
         case L'i':
           res = entry_insert(c, AFTER, scr_width);
@@ -1167,6 +1174,9 @@ bool browse_do(int type, wchar_t input) {
         case KEY_RESIZE:
           ui_stop();
           ui_start();
+          break;
+        case KEY_F(1):
+          dlg_info_file();
           break;
         case KEY_F(2):
           dlg_info_version();

@@ -37,10 +37,14 @@
 
 #define DLG_MSG_SAVE    L"Overwrite %s?"
 #define DLG_MSG_RELOAD  L"Reload %s?"
-#define DLG_MSG_SURE    L"Sure to load another file?"
+#define DLG_MSG_SURE    L"Sure to abandon current data?"
+#define DLG_MSG_SAVEAS  L"Sure to save as?"
 #define DLG_MSG_EXISTS  L"Overwrite existing file?"
 #define DLG_MSG_INVALID L"Invalid directory, retry?"
 #define DLG_MSG_ERROR   L"File access error, retry?"
 #define DLG_MSG_QUIT    L"Sure to quit?"
+
+#define DLG_ERR_RELOAD  L"There is no file to reload."
+#define DLG_ERR_SAVE    L"There is no file to save."
 
 #endif
