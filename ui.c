@@ -68,10 +68,8 @@ static int scr_width, scr_x;
 static int dlg_offset = 1;
 static int dlg_min;
 
-void file_save();
-void file_save_as();
-void file_reload();
-void file_open();
+void file_save(char *path);
+void file_load(char *path);
 WINDOW *dlg_newwin(wchar_t *title, int color);
 void dlg_delwin(WINDOW *win);
 void dlg_simple(wchar_t *title, wchar_t *msg, int color);
@@ -110,84 +108,67 @@ void ui_start();
 void ui_stop();
 void ui_mainloop();
 
-void file_save() {
+void file_save(char *path) {
   Result res;
   wchar_t *msg;
   FILE *fp;
 
-  if (dlg_save()) {
-    msg = calloc(scr_width, sizeof(wchar_t));
-    if (!(fp = fopen(UI_File.path, "w"))) {
-      swprintf(msg, scr_width, L"%s", strerror(errno));
-      dlg_error(msg);
-    } else {
-      res = data_dump(Root->entry, fp);
-      if (!res.success) {
-        swprintf(msg, scr_width, L"%S", res.msg);
-        dlg_error(msg);
-      }
-      fclose(fp);
-    }
-    free(msg);
+  if (!(msg = calloc(scr_width, sizeof(wchar_t)))) {
+    dlg_error(L"Can't allocate msg");
+    return;
   }
+  if (!(fp = fopen(path, "w"))) {
+    swprintf(msg, scr_width, L"%s", strerror(errno));
+    dlg_error(msg);
+  } else {
+    res = data_dump(Root->entry, fp);
+    if (res.success) {
+      if (UI_File.path && (UI_File.path != path))
+        free(UI_File.path);
+      UI_File.path = path;
+      UI_File.loaded = true;
+    } else {
+      swprintf(msg, scr_width, L"%S", res.msg);
+      dlg_error(msg);
+    }
+    fclose(fp);
+  }
+  free(msg);
 }
 
-void file_save_as() {
+void file_load(char *path) {
   Result res;
   wchar_t *msg;
-  char *path;
   FILE *fp;
 
-  if ((path = dlg_save_as())) {
-    msg = calloc(scr_width, sizeof(wchar_t));
-    if (!(fp = fopen(path, "w"))) {
-      swprintf(msg, scr_width, L"%s", strerror(errno));
-      free(path);
-      dlg_error(msg);
-    } else {
-      res = data_dump(Root->entry, fp);
-      if (!res.success) {
-        swprintf(msg, scr_width, L"%S", res.msg);
-        free(path);
-        dlg_error(msg);
-      } else {
+  if (!(msg = calloc(scr_width, sizeof(wchar_t)))) {
+    dlg_error(L"Can't allocate msg");
+    return;
+  }
+  if (!(fp = fopen(path, "r"))) {
+    swprintf(msg, scr_width, L"%s", strerror(errno));
+    dlg_error(msg);
+  } else {
+    res = data_load(fp);
+    if (res.success) {
+      res = ui_set_root((Entry *)res.data);
+      if (res.success) {
+        if (UI_File.path && (UI_File.path != path))
+          free(UI_File.path);
         UI_File.path = path;
         UI_File.loaded = true;
-        dlg_info(L"Saved!");
-      }
-      fclose(fp);
-    }
-    free(msg);
-  }
-}
-
-void file_reload() {
-  Result res;
-  wchar_t *msg;
-  FILE *fp;
-
-  if (dlg_reload()) {
-    msg = calloc(scr_width, sizeof(wchar_t));
-    if (!(fp = fopen(UI_File.path, "r"))) {
-      swprintf(msg, scr_width, L"%s", strerror(errno));
-      dlg_error(msg);
-    } else {
-      res = data_load(fp);
-      if (res.success) {
-        res = ui_set_root((Entry *)res.data);
-        if (!res.success) {
-          swprintf(msg, scr_width, L"%S", res.msg);
-          dlg_error(msg);
-        }
-        ui_refresh();
       } else {
         swprintf(msg, scr_width, L"%S", res.msg);
         dlg_error(msg);
       }
-      fclose(fp);
+      ui_refresh();
+    } else {
+      swprintf(msg, scr_width, L"%S", res.msg);
+      dlg_error(msg);
     }
-    free(msg);
+    fclose(fp);
   }
+  free(msg);
 }
 
 WINDOW *dlg_newwin(wchar_t *title, int color) {
@@ -261,7 +242,7 @@ bool dlg_bool(wchar_t *title, wchar_t *msg, int color) {
   wattron(win, COLOR_PAIR(COLOR_KEY));
   mvwaddwstr(win, 0, scr_width - wcslen(DLG_YESNO), DLG_YESNO);
   wattroff(win, COLOR_PAIR(COLOR_KEY));
-  
+
   wrefresh(win);
   while (true) {
     type = get_wch((wint_t *)&input);
@@ -307,6 +288,7 @@ char *dlg_file_path(wchar_t *title, int color, dlg_file_path_t mode) {
   wchar_t input, *wpath, *empty;
   char *path, *dname;
   int left, type, cursor, len, start;
+  size_t size;
   bool run, refresh, ok;
 
   wpath = empty = NULL;
@@ -355,6 +337,7 @@ char *dlg_file_path(wchar_t *title, int color, dlg_file_path_t mode) {
     if (refresh) {
       mvwaddwstr(win, 0, start, empty);
       mvwaddnwstr(win, 0, start, wpath+(cursor-(cursor % left)), left);
+      redrawwin(win);
       refresh = false;
     }
     wmove(win, 0, start + (cursor % left));
@@ -410,12 +393,13 @@ char *dlg_file_path(wchar_t *title, int color, dlg_file_path_t mode) {
       case OK:
         switch (input) {
           case L'\n':
-            if (wcstombs(path, wpath, PATH_MAX) == -1) {
+            if ((size = wcstombs(path, wpath, PATH_MAX)) == -1) {
               dlg_error(L"Couldn't convert path");
               run = false;
             } else {
-              dname = malloc(strlen(path));
-              strcpy(dname, path);
+              size++;
+              dname = malloc(size);
+              memcpy(dname, path, size);
               dname = dirname(dname);
               if (access(dname, F_OK) == -1) {
                 run = dlg_bool(title, DLG_MSG_INVALID, COLOR_ERROR);
@@ -446,6 +430,7 @@ char *dlg_file_path(wchar_t *title, int color, dlg_file_path_t mode) {
                 }
               }
             }
+            refresh = true;
             break;
           default:
             if (iswprint(input)) {
@@ -881,6 +866,7 @@ bool browse_do(int type, wchar_t input) {
   Result res, r;
   Element *new;
   Entry *c, *o, *oo;
+  char *path;
 
   new = NULL;
   o = NULL;
@@ -888,25 +874,28 @@ bool browse_do(int type, wchar_t input) {
   switch (type) {
     case OK:
       switch (input) {
+        case L'o':
+          if (dlg_bool(DLG_OPEN, DLG_MSG_SURE, COLOR_WARN)) {
+            if ((path = dlg_open()) != NULL)
+              file_load(path);
+          }
+          break;
         case L'r':
-          if (UI_File.loaded)
-            file_reload();
-          else
+          if (UI_File.loaded) {
+            if (dlg_reload())
+              file_load(UI_File.path);
+          } else
             dlg_error(L"There is no file to reload.");
           break;
         case L's':
           if (UI_File.loaded) {
-            if (UI_File.path) {
-              file_save();
-            } else {
-              //dlg_error(L"No save as yet, sorry.");
-              file_save_as();
-            }
+            if (dlg_save())
+              file_save(UI_File.path);
+            break;
           }
-          break;
         case L'S':
-          //dlg_file_path(DLG_SAVEAS, COLOR_WARN);
-          file_save_as();
+          if ((path = dlg_save_as()) != NULL)
+            file_save(path);
           break;
         case L'i':
           res = entry_insert(c, AFTER, scr_width);

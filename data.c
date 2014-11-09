@@ -50,12 +50,13 @@ Result data_load(FILE *input) {
   Entry *new, *r, *c;
   wchar_t *line;
   int line_nr, current_level;
-  
+
   if (!(line = calloc(LINE_MAX_LEN, sizeof(wchar_t))))
     return result_new(false, NULL, L"Couldn't allocate line buffer");
   new = r = c = NULL;
   current_level = 0;
   line_nr = 1;
+  errno = 0;
 
   while (fgetws(line, LINE_MAX_LEN, input)) {
     int length = wcslen(line);
@@ -123,8 +124,8 @@ Result data_load(FILE *input) {
 
 error:
   free(line);
-  if (new) free(new);
-  if (r) data_unload(r);
+  if (new)  free(new);
+  if (r)    data_unload(r);
   return ret;
 }
 
