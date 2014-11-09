@@ -44,6 +44,7 @@ typedef enum {BROWSE, EDIT} ui_mode_t;
 typedef enum {BACKWARD, FORWARD} search_t;
 typedef enum {ALL, CURRENT} update_t;
 typedef enum {C_UP, C_DOWN, C_LEFT, C_RIGHT} cur_move_t;
+typedef enum {D_LOAD, D_SAVE} dlg_file_path_t;
 
 static struct Cursor {
   int x, y;
@@ -64,20 +65,25 @@ static Element *Root = NULL;
 static Element *Current = NULL;
 static ui_mode_t Mode = BROWSE;
 static int scr_width, scr_x;
+static int dlg_offset = 1;
 static int dlg_min;
 
 void file_save();
 void file_save_as();
-void file_load();
-WINDOW *dlg_window(wchar_t *title, int color);
+void file_reload();
+void file_open();
+WINDOW *dlg_newwin(wchar_t *title, int color);
+void dlg_delwin(WINDOW *win);
 void dlg_simple(wchar_t *title, wchar_t *msg, int color);
 void dlg_error(wchar_t *msg);
 void dlg_info(wchar_t *msg);
 bool dlg_bool(wchar_t *title, wchar_t *msg, int color);
 bool dlg_file(wchar_t *title, wchar_t *fmt);
 bool dlg_save();
-bool dlg_load();
-char *dlg_file_path(wchar_t *title, int color);
+bool dlg_reload();
+char *dlg_file_path(wchar_t *title, int color, dlg_file_path_t mode);
+char *dlg_save_as();
+char *dlg_open();
 void cursor_update();
 void cursor_home();
 void cursor_end();
@@ -132,7 +138,7 @@ void file_save_as() {
   char *path;
   FILE *fp;
 
-  if ((path = dlg_file_path(DLG_SAVEAS, COLOR_WARN))) {
+  if ((path = dlg_save_as())) {
     msg = calloc(scr_width, sizeof(wchar_t));
     if (!(fp = fopen(path, "w"))) {
       swprintf(msg, scr_width, L"%s", strerror(errno));
@@ -155,12 +161,12 @@ void file_save_as() {
   }
 }
 
-void file_load() {
+void file_reload() {
   Result res;
   wchar_t *msg;
   FILE *fp;
 
-  if (dlg_load()) {
+  if (dlg_reload()) {
     msg = calloc(scr_width, sizeof(wchar_t));
     if (!(fp = fopen(UI_File.path, "r"))) {
       swprintf(msg, scr_width, L"%s", strerror(errno));
@@ -184,13 +190,15 @@ void file_load() {
   }
 }
 
-WINDOW *dlg_window(wchar_t *title, int color) {
+WINDOW *dlg_newwin(wchar_t *title, int color) {
   WINDOW *win;
 
-  if (!(win = newwin(1, scr_width, LINES - 1, scr_x))) {
+  if (!(win = newwin(1, scr_width, LINES - dlg_offset, scr_x))) {
     fwprintf(stderr, L"Can't make a new dialog window\n");
     exit(1);
   }
+  if (dlg_offset < LINES)
+    dlg_offset++;
   wclear(win);
   wbkgd(win, COLOR_PAIR(color));
   if (wcslen(title) < dlg_min) {
@@ -202,11 +210,19 @@ WINDOW *dlg_window(wchar_t *title, int color) {
   return win;
 }
 
+void dlg_delwin(WINDOW *win) {
+  delwin(win);
+  wredrawln(scr_main, LINES - dlg_offset, LINES - dlg_offset);
+  if (dlg_offset > 1)
+    dlg_offset--;
+  wrefresh(scr_main);
+}
+
 void dlg_simple(wchar_t *title, wchar_t *msg, int color) {
   WINDOW *win;
   int left;
 
-  win = dlg_window(title, color);
+  win = dlg_newwin(title, color);
   left = scr_width - 2;
   if (wcslen(title) < dlg_min)
     left -= wcslen(title);
@@ -217,9 +233,7 @@ void dlg_simple(wchar_t *title, wchar_t *msg, int color) {
 
   wrefresh(win);
   getch();
-  delwin(win);
-  wredrawln(scr_main, LINES - 1, LINES - 1);
-  wrefresh(scr_main);
+  dlg_delwin(win);
 }
 
 void dlg_error(wchar_t *msg) {
@@ -236,7 +250,7 @@ bool dlg_bool(wchar_t *title, wchar_t *msg, int color) {
   wchar_t input;
   int left, type;
 
-  win = dlg_window(title, color);
+  win = dlg_newwin(title, color);
   left = scr_width - wcslen(DLG_YESNO) - 3;
   if (wcslen(title) < dlg_min)
     left -= wcslen(title);
@@ -261,9 +275,7 @@ bool dlg_bool(wchar_t *title, wchar_t *msg, int color) {
       }
     }
   }
-  delwin(win);
-  wredrawln(scr_main, LINES - 1, LINES - 1);
-  wrefresh(scr_main);
+  dlg_delwin(win);
 
   return answer;
 }
@@ -286,11 +298,11 @@ bool dlg_save() {
   return dlg_file(DLG_SAVE, DLG_MSG_SAVE);
 }
 
-bool dlg_load() {
-  return dlg_file(DLG_LOAD, DLG_MSG_LOAD);
+bool dlg_reload() {
+  return dlg_file(DLG_RELOAD, DLG_MSG_RELOAD);
 }
 
-char *dlg_file_path(wchar_t *title, int color) {
+char *dlg_file_path(wchar_t *title, int color, dlg_file_path_t mode) {
   WINDOW *win;
   wchar_t input, *wpath, *empty;
   char *path, *dname;
@@ -300,7 +312,7 @@ char *dlg_file_path(wchar_t *title, int color) {
   wpath = empty = NULL;
   path = dname = NULL;
 
-  win = dlg_window(title, color);
+  win = dlg_newwin(title, color);
   left = scr_width - 2;
   if (wcslen(title) < dlg_min)
     left -= wcslen(title);
@@ -406,19 +418,31 @@ char *dlg_file_path(wchar_t *title, int color) {
               strcpy(dname, path);
               dname = dirname(dname);
               if (access(dname, F_OK) == -1) {
-                run = dlg_bool(DLG_SAVEAS, DLG_MSG_INVALID, COLOR_ERROR);
+                run = dlg_bool(title, DLG_MSG_INVALID, COLOR_ERROR);
               } else {
-                if (access(path, F_OK) == 0) {
-                  run = !dlg_bool(DLG_SAVEAS, DLG_MSG_EXISTS, COLOR_ERROR);
-                  if (!run)
-                    ok = true;
-                } else {
-                  if ((access(path, W_OK) == 0) || (errno == ENOENT)) {
-                    ok = true;
-                    run = false;
-                  } else {
-                    run = dlg_bool(DLG_SAVEAS, DLG_MSG_ERROR, COLOR_ERROR);
-                  }
+                switch (mode) {
+                  case D_LOAD:
+                    if (access(path, R_OK) == 0) {
+                      ok = true;
+                      run = false;
+                    } else {
+                      run = dlg_bool(title, DLG_MSG_ERROR, COLOR_ERROR);
+                    }
+                    break;
+                  case D_SAVE:
+                    if (access(path, F_OK) == 0) {
+                      run = !dlg_bool(title, DLG_MSG_EXISTS, COLOR_ERROR);
+                      if (!run)
+                        ok = true;
+                    } else {
+                      if ((access(path, W_OK) == 0) || (errno == ENOENT)) {
+                        ok = true;
+                        run = false;
+                      } else {
+                        run = dlg_bool(title, DLG_MSG_ERROR, COLOR_ERROR);
+                      }
+                    }
+                    break;
                 }
               }
             }
@@ -441,13 +465,11 @@ char *dlg_file_path(wchar_t *title, int color) {
         break;
     }
   }
-  curs_set(false);
-  delwin(win);
-  wredrawln(scr_main, LINES - 1, LINES - 1);
   free(dname);
   free(wpath);
   free(empty);
-  wrefresh(scr_main);
+  curs_set(false);
+  dlg_delwin(win);
 
   if (ok)
     return path;
@@ -461,6 +483,14 @@ error:
   if (wpath) free(wpath);
   if (empty) free(empty);
   return NULL;
+}
+
+char *dlg_save_as() {
+  return dlg_file_path(DLG_SAVEAS, COLOR_WARN, D_SAVE);
+}
+
+char *dlg_open() {
+  return dlg_file_path(DLG_OPEN, COLOR_WARN, D_LOAD);
 }
 
 void cursor_update() {
@@ -860,7 +890,7 @@ bool browse_do(int type, wchar_t input) {
       switch (input) {
         case L'r':
           if (UI_File.loaded)
-            file_load(UI_File.path);
+            file_reload();
           else
             dlg_error(L"There is no file to reload.");
           break;
