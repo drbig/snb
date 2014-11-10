@@ -1,3 +1,7 @@
+/** @file
+ * Colours definition and setup function
+ */
+
 #define _GNU_SOURCE
 
 #include <ncurses.h>

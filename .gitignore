@@ -3,3 +3,4 @@ src/*.o
 src/version.h
 tests/*
 !tests/*.*
+docs/*

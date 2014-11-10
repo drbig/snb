@@ -1,3 +1,7 @@
+/** @file
+ * Whole UI code in one place
+ */
+
 #define _GNU_SOURCE
 
 #include <stdio.h>
@@ -19,6 +23,7 @@
 #include "colors.h"
 #include "snb.h"
 
+// Element open cache
 typedef struct ElmOpen {
   Entry *entry;
   bool is;
@@ -27,6 +32,7 @@ typedef struct ElmOpen {
   struct ElmOpen *next;
 } ElmOpen;
 
+// Visual tree element
 typedef struct Element {
   Entry *entry;
 
@@ -41,24 +47,28 @@ typedef struct Element {
   struct Element *next;
 } Element;
 
+// Enums to make life a bit saner
 typedef enum {BROWSE, EDIT} ui_mode_t;
 typedef enum {BACKWARD, FORWARD} search_t;
 typedef enum {ALL, CURRENT} update_t;
 typedef enum {C_UP, C_DOWN, C_LEFT, C_RIGHT} cur_move_t;
 typedef enum {D_LOAD, D_SAVE} dlg_file_path_t;
 
+// Cursor position and internal data
 static struct Cursor {
   int x, y;
   int index;
   int lx, ex, ey;
 } Cursor;
 
+// Partial drawing internal data
 static struct Partial {
   bool is;
   bool more, less;
   int offset, limit;
 } Partial;
 
+// UI global variables
 static WINDOW *scr_main = NULL;
 static ElmOpen *ElmOpenRoot = NULL;
 static ElmOpen *ElmOpenLast = NULL;
@@ -69,8 +79,11 @@ static int scr_width, scr_x;
 static int dlg_offset = 1;
 static int dlg_min;
 
+// File loading and saving
 void file_save(char *path);
 void file_load(char *path);
+
+// Dialog windows
 WINDOW *dlg_newwin(wchar_t *title, int color);
 void dlg_delwin(WINDOW *win);
 void dlg_simple(wchar_t *title, wchar_t *msg, int color);
@@ -85,32 +98,47 @@ char *dlg_save_as();
 char *dlg_open();
 void dlg_info_version();
 void dlg_info_file();
+
+// Cursor for editing mode
 void cursor_update();
 void cursor_home();
 void cursor_end();
 void cursor_move(cur_move_t dir);
 void cursor_fix();
+
+// Editing helpers
 void edit_insert(wchar_t ch);
 void edit_remove(int offset);
+
+// Element open cache
 Result elmopen_new(Entry *e);
 void elmopen_set(bool to, Entry *s, Entry *e);
 Result elmopen_get(Entry *e);
 void elmopen_forget(Entry *e);
 void elmopen_clear();
+
+// Visible elements tree
 Result vitree_rebuild(Element *s, Element *e);
 Element *vitree_find(Element *e, Entry *en, search_t dir);
 void vitree_clear(Element *s, Element *e);
+
+// Main modes key handling
 bool browse_do(int type, wchar_t input);
 bool edit_do(int type, wchar_t input);
+
+// Element operations
 Result element_new(Entry *e);
+
+// Drawing
 void element_draw(Element *e);
 void update(update_t mode);
-Result ui_set_root(Entry *e);
-Result ui_get_root();
-void ui_start();
-void ui_stop();
-void ui_mainloop();
 
+/** Save current tree to file
+ *
+ * This will update UI_File as needed.
+ *
+ * @param path Absolute path to a file (MBS)
+ */
 void file_save(char *path) {
   Result res;
   wchar_t *msg;
@@ -139,6 +167,12 @@ void file_save(char *path) {
   free(msg);
 }
 
+/** Load tree from file
+ *
+ * This will also discard current tree and update UI_File as needed.
+ *
+ * @param path Absolute path to a file (MBS)
+ */
 void file_load(char *path) {
   Result res;
   wchar_t *msg;
@@ -174,6 +208,8 @@ void file_load(char *path) {
   free(msg);
 }
 
+/** Setup new dialog window
+ */
 WINDOW *dlg_newwin(wchar_t *title, int color) {
   WINDOW *win;
 
@@ -194,6 +230,10 @@ WINDOW *dlg_newwin(wchar_t *title, int color) {
   return win;
 }
 
+/** Clean up after a dialog window
+ *
+ * This will also refresh the main screen.
+ */
 void dlg_delwin(WINDOW *win) {
   delwin(win);
   wredrawln(scr_main, LINES - dlg_offset, LINES - dlg_offset);
@@ -202,6 +242,11 @@ void dlg_delwin(WINDOW *win) {
   wrefresh(scr_main);
 }
 
+/** Show a simple dialog
+ *
+ * Simple dialog shows a single static string and can be
+ * dismissed with any key.
+ */
 void dlg_simple(wchar_t *title, wchar_t *msg, int color) {
   WINDOW *win;
   int left;
@@ -220,14 +265,20 @@ void dlg_simple(wchar_t *title, wchar_t *msg, int color) {
   dlg_delwin(win);
 }
 
+/** Show an error dialog
+ */
 void dlg_error(wchar_t *msg) {
   dlg_simple(DLG_ERROR, msg, COLOR_ERROR);
 }
 
+/** Show an info dialog
+ */
 void dlg_info(wchar_t *msg) {
   dlg_simple(DLG_INFO, msg, COLOR_INFO);
 }
 
+/** Show a yes/no dialog
+ */
 bool dlg_bool(wchar_t *title, wchar_t *msg, int color) {
   WINDOW *win;
   bool answer;
@@ -264,6 +315,11 @@ bool dlg_bool(wchar_t *title, wchar_t *msg, int color) {
   return answer;
 }
 
+/** Show a dialog related to currently loaded file
+ *
+ * fmt is expected to contain a single "%s" that will be replaced
+ * with the basename of the currently loaded file.
+ */
 bool dlg_file(wchar_t *title, wchar_t *fmt) {
   wchar_t *msg;
   char *fname;
@@ -278,14 +334,29 @@ bool dlg_file(wchar_t *title, wchar_t *fmt) {
   return answer;
 }
 
+/** Show save current file dialog
+ */
 bool dlg_save() {
   return dlg_file(DLG_SAVE, DLG_MSG_SAVE);
 }
 
+/** Show reload current file dialog
+ */
 bool dlg_reload() {
   return dlg_file(DLG_RELOAD, DLG_MSG_RELOAD);
 }
 
+/** Show a dialog asking for a valid file path
+ *
+ * This has two modes depending on dlg_file_path_t, one for saving
+ * a file and one for loading a file, where the only difference is how
+ * file access errors are handled. E.g. it's ok for a path to point to
+ * a non-existent file if we're saving, but it's not ok if we are loading.
+ *
+ * The user can bail out if he gives a bad path.
+ *
+ * @return Selected file path (MBS)
+ */
 char *dlg_file_path(wchar_t *title, int color, dlg_file_path_t mode) {
   WINDOW *win;
   wchar_t input, *wpath, *empty;
@@ -480,18 +551,26 @@ error:
   return NULL;
 }
 
+/** Show a save as dialog
+ */
 char *dlg_save_as() {
   return dlg_file_path(DLG_SAVEAS, COLOR_WARN, D_SAVE);
 }
 
+/** Show a open file dialog
+ */
 char *dlg_open() {
   return dlg_file_path(DLG_OPEN, COLOR_WARN, D_LOAD);
 }
 
+/** Show a version and legal stuff dialog
+ */
 void dlg_info_version() {
   dlg_simple(DLG_INFO, INFO_STR, COLOR_OK);
 }
 
+/** Show current file path dialog
+ */
 void dlg_info_file() {
   wchar_t *wpath;
   int len;
@@ -506,12 +585,18 @@ void dlg_info_file() {
     dlg_simple(DLG_INFO, L"No file loaded.", COLOR_OK);
 }
 
+/** Update cursor internal data
+ *
+ * This update cursor internal data.
+ */
 void cursor_update() {
   Cursor.lx = Current->lx + BULLET_WIDTH;
   Cursor.ex = Cursor.lx + (Current->entry->length % Current->width);
   Cursor.ey = Current->ly + Current->lines - 1;
 }
 
+/** Move cursor home
+ */
 void cursor_home() {
   Cursor.y = Current->ly;
   Cursor.x = Cursor.lx;
@@ -519,6 +604,8 @@ void cursor_home() {
   cursor_fix();
 }
 
+/** Move cursor end
+ */
 void cursor_end() {
   Cursor.y = Cursor.ey;
   Cursor.x = Cursor.ex;
@@ -526,6 +613,10 @@ void cursor_end() {
   cursor_fix();
 }
 
+/** Advance cursor in given direction
+ *
+ * This basically implements 'the arrow keys'.
+ */
 void cursor_move(cur_move_t dir) {
   switch (dir) {
     case C_UP:
@@ -571,11 +662,21 @@ void cursor_move(cur_move_t dir) {
   cursor_fix();
 }
 
+/** Recalculate cursor index from current position
+ */
 void cursor_recalc() {
   int index = Cursor.index > 0 ? Cursor.index : 1;
   Cursor.y = Current->ly + (index / Current->width);
 }
 
+/** Fix cursor in case we're in partial view
+ *
+ * This is a bolted-on solution for editing when the current
+ * entry doesn't fit on the screen (hence partial).
+ *
+ * Basically if needed we fix the display offset and the y coord
+ * of the cursor.
+ */
 void cursor_fix() {
   int y;
 
@@ -607,6 +708,10 @@ void cursor_fix() {
   wmove(scr_main, y, Cursor.x);
 }
 
+/** Handle character entry
+ *
+ * This also updates and refreshes the screen.
+ */
 void edit_insert(wchar_t ch) {
   Entry *e;
   wchar_t *new;
@@ -646,6 +751,16 @@ void edit_insert(wchar_t ch) {
   }
 }
 
+/** Handle character deletion
+ *
+ * The offset parameter differentiates between the behaviours
+ * of delete and backspace keys. Using other values will probably
+ * blow the whole thing up.
+ *
+ * This also updates and refreshes the screen.
+ *
+ * @param offset `0` for delete, `-1` for backspace
+ */
 void edit_remove(int offset) {
   Entry *e;
 
@@ -698,6 +813,10 @@ void edit_remove(int offset) {
   }
 }
 
+/** Add element open cache item
+ *
+ * @param e Entry for which to add the cache element
+ */
 Result elmopen_new(Entry *e) {
   ElmOpen *new;
 
@@ -718,6 +837,14 @@ Result elmopen_new(Entry *e) {
   return result_new(true, new, L"Allocated new ElmOpen");
 }
 
+/** Set element open cache items
+ *
+ * Use this only on ranges.
+ *
+ * @param to Value to set to
+ * @param s Start entry (can't be NULL)
+ * @param e End entry (can be NULL)
+ */
 void elmopen_set(bool to, Entry *s, Entry *e) {
   bool act;
   ElmOpen *t;
@@ -733,6 +860,8 @@ void elmopen_set(bool to, Entry *s, Entry *e) {
   } while ((t = t->next));
 }
 
+/** Find an element open cache item for an entry
+ */
 Result elmopen_get(Entry *e) {
   ElmOpen *t;
 
@@ -748,6 +877,8 @@ Result elmopen_get(Entry *e) {
   return result_new(true, t, L"Found ElemOpen in cache");
 }
 
+/** Remove an element open cache item for an entry
+ */
 void elmopen_forget(Entry *e) {
   ElmOpen *t;
 
@@ -764,6 +895,8 @@ void elmopen_forget(Entry *e) {
   free(t);
 }
 
+/** Clear element open cache
+ */
 void elmopen_clear() {
   ElmOpen *t, *n;
 
@@ -781,6 +914,15 @@ void elmopen_clear() {
   ElmOpenRoot = ElmOpenLast = NULL;
 }
 
+/** Rebuild visual tree
+ *
+ * Not that this will not remove the starting element.
+ * In other words you have to handle Root element on
+ * your own and with care.
+ *
+ * @param s Start element
+ * @param e End element
+ */
 Result vitree_rebuild(Element *s, Element *e) {
   Result res;
   Element *new;
@@ -851,6 +993,16 @@ Result vitree_rebuild(Element *s, Element *e) {
   return result_new(true, s, L"Cache rebuilt");
 }
 
+/** Find a visual tree element for an entry
+ *
+ * As the visual tree is being rebuild on changes the pointer
+ * you may currently hold is probably invalid.
+ *
+ * @param e Start element
+ * @param en Entry to find an element for
+ * @param dir Direction of search relative to e
+ * @return Will return NULL if not found
+ */
 Element *vitree_find(Element *e, Entry *en, search_t dir) {
   if (!en)
     return NULL;
@@ -873,6 +1025,13 @@ Element *vitree_find(Element *e, Entry *en, search_t dir) {
   return NULL;
 }
 
+/** Remove visual tree elements
+ *
+ * This won't do anything if `s == e`.
+ *
+ * @param s Start element
+ * @param e End element
+ */
 void vitree_clear(Element *s, Element *e) {
   Element *n;
 
@@ -889,6 +1048,8 @@ void vitree_clear(Element *s, Element *e) {
   }
 }
 
+/** Handle browse mode input
+ */
 bool browse_do(int type, wchar_t input) {
   Result res, r;
   Element *new;
@@ -1189,6 +1350,8 @@ bool browse_do(int type, wchar_t input) {
   return true;
 }
 
+/** Handle edit mode input
+ */
 bool edit_do(int type, wchar_t input) {
   switch (type) {
     case OK:
@@ -1247,6 +1410,12 @@ bool edit_do(int type, wchar_t input) {
   return true;
 }
 
+/** Insert new element
+ *
+ * This setups a visual tree and element open cache items.
+ *
+ * @param e Entry to make an element for
+ */
 Result element_new(Entry *e) {
   Result res;
   Element *new;
@@ -1266,6 +1435,8 @@ Result element_new(Entry *e) {
   return result_new(true, new, L"Allocated new Element");
 }
 
+/** Draw a single element
+ */
 void element_draw(Element *e) {
   Entry *en;
   wchar_t *bullet;
@@ -1339,6 +1510,11 @@ void element_draw(Element *e) {
     waddwstr(scr_main, L"\n");
 }
 
+/** Update screen
+ *
+ * This works in either single item update or whole screen update,
+ * unless the current item doesn't fit on the screen.
+ */
 void update(update_t mode) {
   Element *e, *p;
   int y, yy;
@@ -1406,6 +1582,8 @@ void update(update_t mode) {
   wrefresh(scr_main);
 }
 
+/** Set root item for the UI
+ */
 Result ui_set_root(Entry *e) {
   Result res;
 
@@ -1426,10 +1604,14 @@ Result ui_set_root(Entry *e) {
   return result_new(true, Root, L"Set root");
 }
 
+/** Get root item of the UI
+ */
 Result ui_get_root() {
   return result_new(true, Current->entry, L"Ok");
 }
 
+/** Start the UI
+ */
 void ui_start() {
   initscr();
   start_color();
@@ -1459,15 +1641,25 @@ void ui_start() {
   update(ALL);
 }
 
+/** Stop the UI
+ */
 void ui_stop() {
   delwin(scr_main);
   endwin();
 }
 
+/** Update screen
+ *
+ * Only needed once in the main binary after the root has been set.
+ */
 void ui_refresh() {
   update(ALL);
 }
 
+/** Main input loop
+ *
+ * Reads a key and dispatches based on mode.
+ */
 void ui_mainloop() {
   bool run;
   int type;

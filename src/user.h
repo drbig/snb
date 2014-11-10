@@ -1,3 +1,7 @@
+/** @file
+ * User-accessible config variables
+ */
+
 #ifndef USER_H
 #define USER_H
 

@@ -1,3 +1,12 @@
+/** @file
+ * Naïve nested lists data structure implementation
+ *
+ * This is pretty much stand-alone code for reading, writing and
+ * manipulating nested lists, with Markdown compatible IO format.
+ *
+ * Also implements means of returning error information.
+ */
+
 #define _GNU_SOURCE
 
 #include <stdarg.h>
@@ -12,6 +21,8 @@
 #include "user.h"
 #include "data.h"
 
+/** Format a result
+ */
 Result result_new(bool success, void *data, const wchar_t *fmt, ...) {
   va_list args;
   Result ret;
@@ -26,6 +37,10 @@ Result result_new(bool success, void *data, const wchar_t *fmt, ...) {
   return ret;
 }
 
+/** Create new entry
+ *
+ * New entry is safely zeroed.
+ */
 Result entry_new(int length) {
   Entry *new;
 
@@ -45,6 +60,8 @@ Result entry_new(int length) {
   return result_new(true, new, L"Allocated new Entry with %d text buffer", length);
 }
 
+/** Parse input
+ */
 Result data_load(FILE *input) {
   Result ret, res;
   Entry *new, *r, *c;
@@ -90,7 +107,7 @@ Result data_load(FILE *input) {
 
       if (current_level < level) {
         if (level - current_level != 1) {
-          ret = result_new(false, NULL, L"Ambigous indentation at line %d", line_nr);
+          ret = result_new(false, NULL, L"Ambiguous indentation at line %d", line_nr);
           goto error;
         }
         new->parent = c;
@@ -139,6 +156,8 @@ error:
   return ret;
 }
 
+/** Free a tree recursively
+ */
 void data_unload(Entry *e) {
   if (e->child)
     data_unload(e->child);
@@ -149,6 +168,8 @@ void data_unload(Entry *e) {
   free(e);
 }
 
+/** Output data
+ */
 Result data_dump(Entry *e, FILE *output) {
   bool run;
   int level, line_nr, t;
@@ -191,9 +212,11 @@ Result data_dump(Entry *e, FILE *output) {
   return result_new(true, NULL, L"Written %d lines", line_nr);
 
 error:
-  return result_new(false, NULL, L"Error occured. May have written %d lines", line_nr);
+  return result_new(false, NULL, L"Error occurred. May have written %d lines", line_nr);
 }
 
+/** Insert new entry
+ */
 Result entry_insert(Entry *e, insert_t dir, int length) {
   Result res;
   Entry *new;
@@ -226,6 +249,10 @@ Result entry_insert(Entry *e, insert_t dir, int length) {
   return result_new(true, new, L"Inserted new Entry");
 }
 
+/** Indent entry
+ *
+ * In other terms change the level of the entry.
+ */
 bool entry_indent(Entry *e, indent_t dir) {
   Entry *t;
 
@@ -275,6 +302,8 @@ bool entry_indent(Entry *e, indent_t dir) {
   return true;
 }
 
+/** Move an entry
+ */
 bool entry_move(Entry *e, move_t dir) {
   Entry *o;
 
@@ -324,6 +353,8 @@ bool entry_move(Entry *e, move_t dir) {
   return true;
 }
 
+/** Delete an entry
+ */
 Result entry_delete(Entry *e) {
   Entry *o;
 
