@@ -28,7 +28,7 @@ Result result_new(bool success, void *data, const wchar_t *fmt, ...) {
 
 Result entry_new(int length) {
   Entry *new;
-  
+
   if (!(new = malloc(sizeof(Entry))))
     return result_new(false, NULL, L"Couldn't allocate Entry");
   bzero(new, sizeof(Entry));

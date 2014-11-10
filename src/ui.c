@@ -274,7 +274,7 @@ bool dlg_file(wchar_t *title, wchar_t *fmt) {
   swprintf(msg, scr_width, fmt, fname);
   answer = dlg_bool(title, msg, COLOR_WARN);
   free(msg);
-  
+
   return answer;
 }
 
@@ -321,7 +321,7 @@ char *dlg_file_path(wchar_t *title, int color, dlg_file_path_t mode) {
   for (cursor = 0; cursor <= left; cursor++)
     empty[cursor] = L' ';
   empty[left+1] = L'\0';
-  
+
   if (UI_File.loaded)
     swprintf(wpath, PATH_MAX, L"%s", UI_File.path);
   else {
@@ -413,17 +413,16 @@ char *dlg_file_path(wchar_t *title, int color, dlg_file_path_t mode) {
               dname = malloc(size);
               memcpy(dname, path, size);
               dname = dirname(dname);
-              if (access(dname, F_OK) == -1) {
+              if (access(dname, F_OK) == -1)
                 run = dlg_bool(title, DLG_MSG_INVALID, COLOR_ERROR);
-              } else {
+              else {
                 switch (mode) {
                   case D_LOAD:
                     if (access(path, R_OK) == 0) {
                       ok = true;
                       run = false;
-                    } else {
+                    } else
                       run = dlg_bool(title, DLG_MSG_ERROR, COLOR_ERROR);
-                    }
                     break;
                   case D_SAVE:
                     if (access(path, F_OK) == 0) {
@@ -434,9 +433,8 @@ char *dlg_file_path(wchar_t *title, int color, dlg_file_path_t mode) {
                       if ((access(path, W_OK) == 0) || (errno == ENOENT)) {
                         ok = true;
                         run = false;
-                      } else {
+                      } else
                         run = dlg_bool(title, DLG_MSG_ERROR, COLOR_ERROR);
-                      }
                     }
                     break;
                 }
@@ -596,9 +594,8 @@ void cursor_fix() {
       }
       update(CURRENT);
       y = LINES - 1;
-    } else {
+    } else
       y -= Partial.offset;
-    }
   }
   wmove(scr_main, y, Cursor.x);
 }
@@ -657,7 +654,7 @@ void edit_remove(int offset) {
     return;
 
   wmemmove(e->text+Cursor.index+offset, e->text+Cursor.index+offset+1,
-      e->length - Cursor.index);
+           e->length - Cursor.index);
   e->length--;
   e->text[e->length] = L'\0';
 
@@ -942,7 +939,7 @@ bool browse_do(int type, wchar_t input) {
         case L'\n':
           Mode = EDIT;
           update(CURRENT);
-          curs_set(true); 
+          curs_set(true);
           cursor_update();
           cursor_end();
           wrefresh(scr_main);
@@ -972,13 +969,11 @@ bool browse_do(int type, wchar_t input) {
               break;
             }
             Current = vitree_find(Root, (Entry *)res.data, FORWARD);
-            if (Current->next == Current) {
+            if (Current->next == Current)
               Root->next = Root->prev = NULL;
-            }
             update(ALL);
-          } else {
+          } else
             dlg_error(res.msg);
-          }
           break;
         case L'h':
           if (Current->open->is) {
@@ -1143,9 +1138,8 @@ bool browse_do(int type, wchar_t input) {
           break;
         case L'c':
           new = Current;
-          while (new->level != 0) {
+          while (new->level != 0)
             new = new->prev;
-          }
           o = new->entry;
           elmopen_set(false, NULL, NULL);
           r = vitree_rebuild(Root, NULL);
@@ -1377,7 +1371,7 @@ void update(update_t mode) {
             p = e->prev;
             while (yy >= 0) {
               mvwaddnwstr(scr_main, yy, p->lx + BULLET_WIDTH,
-                  p->entry->text+((p->lines-(y-yy))*p->width), p->width);
+                          p->entry->text+((p->lines-(y-yy))*p->width), p->width);
               yy--;
             }
             mvwaddwstr(scr_main, 0, p->lx + (BULLET_WIDTH / 2), TEXT_MORE);
@@ -1475,9 +1469,9 @@ void ui_mainloop() {
   run = true;
   while (run) {
     type = get_wch((wint_t *)&input);
-    if (type == ERR) {
+    if (type == ERR)
       dlg_error(L"Error reading keyboard?");
-    } else {
+    else {
       switch (Mode) {
         case BROWSE:
           run = browse_do(type, input);

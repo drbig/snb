@@ -36,7 +36,7 @@ void data_debug_dump(Entry *e, FILE *output) {
     fwprintf(output, L"- ");
   fwprintf(output, L"\"%S\"", e->text);
   fwprintf(output, L" (l:%d c:%d s:%d len:%d wlen:%d)\n",
-      level, e->crossed, e->size, e->length, wcslen(e->text));
+           level, e->crossed, e->size, e->length, wcslen(e->text));
   if (e->child)
     data_debug_dump(e->child, output);
   if (e->next)

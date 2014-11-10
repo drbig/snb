@@ -19,7 +19,7 @@ int main(int argc, char *argv[]) {
   FILE *fp;
   Result res;
   char *path;
-  
+
   fp = NULL;
 
   setlocale(LC_ALL, "");
