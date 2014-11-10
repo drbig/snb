@@ -493,9 +493,16 @@ void dlg_info_version() {
 }
 
 void dlg_info_file() {
-  if (UI_File.loaded)
-    dlg_simple(DLG_INFO, (wchar_t *)UI_File.path, COLOR_OK);
-  else
+  wchar_t *wpath;
+  int len;
+
+  if (UI_File.loaded) {
+    len = strlen(UI_File.path);
+    wpath = calloc(len, sizeof(wchar_t));
+    mbstowcs(wpath, UI_File.path, len);
+    dlg_simple(DLG_INFO, wpath, COLOR_OK);
+    free(wpath);
+  } else
     dlg_simple(DLG_INFO, L"No file loaded.", COLOR_OK);
 }
 
