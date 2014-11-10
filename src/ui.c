@@ -1630,8 +1630,10 @@ void ui_start() {
 
   scr_width = COLS < SCR_WIDTH ? (COLS - 2) : SCR_WIDTH;
   scr_x = ((COLS - scr_width) / 2) - 1;
+  scr_x = scr_x < 0 ? 0 : scr_x;
   if (!(scr_main = newwin(LINES, scr_width, 0, scr_x))) {
-    fwprintf(stderr, L"Can't make a new dialog window\n");
+    endwin();
+    fwprintf(stderr, L"Can't make a new main window\n");
     exit(1);
   }
   dlg_min = scr_width - DLG_MIN_SPACE;
