@@ -42,9 +42,11 @@ You can configure the UI appearance by editing `src/user.h` and perhaps `src/col
 
 Feel free to hack the code to your liking.
 
-If you wish to contribute back please make sure your changes are on a separate branch and make a pull request (in other words usual GitHub development model).
+If you wish to contribute back please make sure that: a. your changes are on a separate branch; b. you have run `make style` before committing (you'll need to have [astyle](http://astyle.sourceforge.net/) installed); and make a pull request (in other words follow the usual GitHub development model).
 
-This was my first attempt at writing: a. non-trivial Unix program in C; b. locale aware program in C; c. ncurses-based interface. As such the code is rather clunky and rough. However I became good friends with [valgrind](http://valgrind.org/) and [gdb](http://www.gnu.org/software/gdb/), and got myself a working clone of the venerable [hnb](http://hnb.sourceforge.net/) that can speak languages.
+This was my first attempt at writing: a. non-trivial Unix program in C; b. locale aware program in C; c. ncurses-based interface. As such the code is rather clunky and rough, and you can follow the journey as I left the git history unaltered (do that on your own risk though).
+
+However in the process I became good friends with [valgrind](http://valgrind.org/) and [gdb](http://www.gnu.org/software/gdb/), and got myself a working clone of the venerable [hnb](http://hnb.sourceforge.net/) that can speak languages.
 
 The code has rudimentary comments and if you have [doxygen](http://www.stack.nl/~dimitri/doxygen/) installed `make docs` will work. I've also written a very ugly test suite for the data handling part, and if you have [check](http://check.sourceforge.net/) installed `make check` should also work.
 
