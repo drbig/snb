@@ -360,13 +360,12 @@ bool dlg_reload() {
 char *dlg_file_path(wchar_t *title, int color, dlg_file_path_t mode) {
   WINDOW *win;
   wchar_t input, *wpath, *empty;
-  char *path, *dname;
+  char *path, *tpath, *dname;
   int left, type, cursor, len, start;
-  size_t size;
   bool run, refresh, ok;
 
   wpath = empty = NULL;
-  path = dname = NULL;
+  path = tpath = dname = NULL;
 
   win = dlg_newwin(title, color);
   left = scr_width - 2;
@@ -376,6 +375,11 @@ char *dlg_file_path(wchar_t *title, int color, dlg_file_path_t mode) {
 
   if (!(path = malloc(PATH_MAX))) {
     dlg_error(L"Can't allocate path");
+    goto error;
+  }
+
+  if (!(tpath = malloc(PATH_MAX))) {
+    dlg_error(L"Can't allocate tpath");
     goto error;
   }
 
@@ -476,14 +480,12 @@ char *dlg_file_path(wchar_t *title, int color, dlg_file_path_t mode) {
             refresh = true;
             break;
           case L'\n':
-            if ((size = wcstombs(path, wpath, PATH_MAX)) == -1) {
+            if (wcstombs(path, wpath, PATH_MAX) == -1) {
               dlg_error(L"Couldn't convert path");
               run = false;
             } else {
-              size++;
-              dname = malloc(size);
-              memcpy(dname, path, size);
-              dname = dirname(dname);
+              memcpy(tpath, path, PATH_MAX);
+              dname = dirname(tpath);
               if (access(dname, F_OK) == -1)
                 run = dlg_bool(title, DLG_MSG_INVALID, COLOR_ERROR);
               else {
@@ -531,7 +533,7 @@ char *dlg_file_path(wchar_t *title, int color, dlg_file_path_t mode) {
         break;
     }
   }
-  free(dname);
+  free(tpath);
   free(wpath);
   free(empty);
   curs_set(false);
@@ -546,6 +548,7 @@ char *dlg_file_path(wchar_t *title, int color, dlg_file_path_t mode) {
 
 error:
   if (path) free(path);
+  if (tpath) free(tpath);
   if (wpath) free(wpath);
   if (empty) free(empty);
   return NULL;
