@@ -59,6 +59,7 @@ Result data_load(FILE *input) {
   errno = 0;
 
   while (fgetws(line, LINE_MAX_LEN, input)) {
+    new = NULL;
     int length = wcslen(line);
     if (length <= 1) continue;  // ignore empty lines
     line[length-1] = L'\0';     // kill newline char
@@ -133,8 +134,8 @@ Result data_load(FILE *input) {
 
 error:
   free(line);
-  if (new)  free(new);
-  if (r)    data_unload(r);
+  if (new) free(new);
+  if (r) data_unload(r);
   return ret;
 }
 
