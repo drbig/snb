@@ -357,31 +357,3 @@ Result entry_delete(Entry *e) {
   else
     return result_new(true, o, L"Deleted entry");
 }
-
-#ifdef DEBUG
-void data_debug_dump(Entry *e, FILE *output) {
-  Entry *t;
-  int level, c;
-
-  t = e;
-  level = 0;
-  while (t->parent) {
-    t = t->parent;
-    ++level;
-  }
-
-  for (c = level; c > 0; --c)
-    fwprintf(output, L" ");
-  if (e->child)
-    fwprintf(output, L"+ ");
-  else
-    fwprintf(output, L"- ");
-  fwprintf(output, L"\"%S\"", e->text);
-  fwprintf(output, L" (l:%d c:%d s:%d len:%d wlen:%d)\n",
-      level, e->crossed, e->size, e->length, wcslen(e->text));
-  if (e->child)
-    data_debug_dump(e->child, output);
-  if (e->next)
-    data_debug_dump(e->next, output);
-}
-#endif

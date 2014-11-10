@@ -33,8 +33,4 @@ bool entry_indent(Entry *e, indent_t dir);
 bool entry_move(Entry *e, move_t dir);
 Result entry_delete(Entry *e);
 
-#ifdef DEBUG
-void data_debug_dump(Entry *e, FILE *output);
-#endif
-
 #endif

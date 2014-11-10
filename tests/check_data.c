@@ -8,14 +8,40 @@
 #include <string.h>
 #include <wchar.h>
 
-#define DEBUG
-#include "data.h"
+#include "../src/user.h"
+#include "../src/data.h"
 
 FILE *fp, *sink;
 Result res;
 Entry *root;
 struct Entry *tree[16];
 bool verbose;
+
+void data_debug_dump(Entry *e, FILE *output) {
+  Entry *t;
+  int level, c;
+
+  t = e;
+  level = 0;
+  while (t->parent) {
+    t = t->parent;
+    ++level;
+  }
+
+  for (c = level; c > 0; --c)
+    fwprintf(output, L" ");
+  if (e->child)
+    fwprintf(output, L"+ ");
+  else
+    fwprintf(output, L"- ");
+  fwprintf(output, L"\"%S\"", e->text);
+  fwprintf(output, L" (l:%d c:%d s:%d len:%d wlen:%d)\n",
+      level, e->crossed, e->size, e->length, wcslen(e->text));
+  if (e->child)
+    data_debug_dump(e->child, output);
+  if (e->next)
+    data_debug_dump(e->next, output);
+}
 
 bool dump_error(Result res) {
   if (!res.success) {
@@ -35,7 +61,7 @@ void dump_root() {
 }
 
 START_TEST(test_load_dump) {
-  if (!(fp = fopen("test-data-1.txt", "r"))) {
+  if (!(fp = fopen("./tests/data.txt", "r"))) {
     perror("Can't open test data");
     ck_abort_msg("Can't open test data");
   }

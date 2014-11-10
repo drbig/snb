@@ -50,7 +50,7 @@ int main(int argc, char *argv[]) {
     }
     fclose(fp);
   } else {
-    res = entry_new(80);
+    res = entry_new(1);
     UI_File.loaded = false;
   }
 

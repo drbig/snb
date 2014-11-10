@@ -1,8 +1,5 @@
-*
-!.gitignore
-!Makefile
-!*.c
-!*.h
-!*.txt
-!*.md
-version.h
+bin/*
+src/*.o
+src/version.h
+tests/*
+!tests/*.*
