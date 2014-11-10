@@ -12,7 +12,7 @@ VERSION=$$(git describe --tags --always --dirty --match "[0-9A-Z]*.[0-9A-Z]*")
 all: version bin/$(PRG)
 
 version:
-	@echo "#define VERSION L\"$(VERSION)\"" > src/version.h
+	echo "#define VERSION L\"$(VERSION)\"" > src/version.h
 
 clean:
 	rm -f src/*.o bin/$(PRG) tests/$(TESTS)
@@ -21,18 +21,20 @@ debug: CFLAGS+=-DDEBUG -g
 debug: all
 
 check: tests/$(TESTS)
-	@./tests/$(TESTS)
+	./tests/$(TESTS)
 
 style:
 	astyle $(STYLE) src/*.c src/*.h tests/*.c
 
 docs:
+	mkdir -p docs/
 	doxygen doxygen.conf
 
 tests/$(TESTS): $(DEPS)
 	$(CC) $(CFLAGS) $(LDFLAGS) -lcheck -o $@ tests/$(TESTS).c $(DEPS)
 
 bin/$(PRG): $(DEPS)
+	mkdir -p bin/
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ src/$(PRG).c $(DEPS)
 
 %.o: %.c
