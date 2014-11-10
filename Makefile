@@ -6,7 +6,7 @@ DEPS=src/data.o src/ui.o src/colors.o
 TESTS=check_data
 VERSION=$$(git describe --tags --always --dirty --match "[0-9A-Z]*.[0-9A-Z]*")
 
-.PHONY: all clean debug check
+.PHONY: clean check
 
 all: version bin/$(PRG)
 
@@ -17,7 +17,7 @@ clean:
 	rm -f src/*.o bin/$(PRG) tests/$(TESTS)
 
 debug: CFLAGS+=-DDEBUG -g
-debug: clean all
+debug: all
 
 check: tests/$(TESTS)
 	@./tests/$(TESTS)
