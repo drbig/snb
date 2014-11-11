@@ -887,6 +887,8 @@ void elmopen_forget(Entry *e) {
 
   t = ElmOpenRoot;
   while ((t->entry != e) && (t = t->next));
+  if (!t)
+    return;
   if (t->prev)
     t->prev->next = t->next;
   else

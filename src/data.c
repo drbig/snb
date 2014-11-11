@@ -142,12 +142,13 @@ Result data_load(FILE *input) {
 
     ++line_nr;
   }
-  free(line);
 
   if (errno)
     ret = result_new(false, NULL, L"File access error at line %d", line_nr);
-  else
+  else {
+    free(line);
     return result_new(true, r, L"Parsed %d lines", line_nr);
+  }
 
 error:
   free(line);
