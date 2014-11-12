@@ -1,12 +1,15 @@
 CC=gcc
 CFLAGS=-Wall -Werror
-LDFLAGS=-lncursesw
+LDFLAGS=
 STYLE=-nA2s2SHxC100xj
 BINDIR=bin
 PRG=snb
 DEPS=src/data.o src/ui.o src/colors.o
 TESTS=check_data
-VERSION=$$(git describe --tags --always --dirty --match "[0-9A-Z]*.[0-9A-Z]*")
+VERSION=$(shell git describe --tags --always --dirty --match "[0-9A-Z]*.[0-9A-Z]*")
+NCURS_INC=$(shell ncursesw5-config --cflags)
+NCURS_LIB=$(shell ncursesw5-config --libs)
+
 
 .PHONY: clean check style docs analyze full-check
 
@@ -41,11 +44,11 @@ analyze:
 full-check: clean style debug check analyze
 
 tests/$(TESTS): $(DEPS)
-	$(CC) $(CFLAGS) $(LDFLAGS) -lcheck -o $@ tests/$(TESTS).c $(DEPS)
+	$(CC) $(CFLAGS) $(LDFLAGS) $(NCURS_INC) -o $@ tests/$(TESTS).c $(DEPS) $(NCURS_LIB) -lcheck
 
 $(BINDIR)/$(PRG): $(DEPS)
 	@mkdir -p $(BINDIR)/
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ src/$(PRG).c $(DEPS)
+	$(CC) $(CFLAGS) $(LDFLAGS) $(NCURS_INC) -o $@ src/$(PRG).c $(DEPS) $(NCURS_LIB)
 
 %.o: %.c
-	$(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) $(LDFLAGS) $(NCURS_INC) -c $< -o $@ $(NCURS_LIB)
