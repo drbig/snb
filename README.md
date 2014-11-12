@@ -24,7 +24,7 @@ Features / Bugs:
     $ cd snb
     $ make debug
 
-~~If the build fails the most probable cause is you don't have ncursesw, or there is a configuration problem. Check `Makefile` and adjust paths for includes and/or `ncursesw` library.~~ The Makefile is now a bit smarter. If you can successfully run `ncursesw5-config` then any compile problems are probably due to something else (please make file an issue via GitHub in such case).
+~~If the build fails the most probable cause is you don't have ncursesw, or there is a configuration problem. Check `Makefile` and adjust paths for includes and/or `ncursesw` library.~~ The Makefile is now a bit smarter. If you can successfully run `ncursesw5-config` then any compile problems are probably due to something else (please file an issue via GitHub in such case).
 
 If the build is successful:
 
