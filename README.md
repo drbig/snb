@@ -1,4 +1,4 @@
-# Simple Hierarchical Notebook
+# Simple Hierarchical Notebook [![Build Status](https://travis-ci.org/drbig/snb.svg?branch=master)](https://travis-ci.org/drbig/snb)
 
 ![SNB in action](https://raw.github.com/drbig/snb/master/snb.png)
 
@@ -24,7 +24,7 @@ Features / Bugs:
     $ cd snb
     $ make debug
 
-If the build fails the most probable cause is you don't have ncurses**w**, or there is a configuration problem. Check `Makefile` and adjust paths for includes and/or `ncursesw` library.
+~~If the build fails the most probable cause is you don't have ncursesw, or there is a configuration problem. Check `Makefile` and adjust paths for includes and/or `ncursesw` library.~~ The Makefile is now a bit smarter. If you can successfully run `ncursesw5-config` then any compile problems are probably due to something else (please make file an issue via GitHub in such case).
 
 If the build is successful:
 
