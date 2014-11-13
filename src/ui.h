@@ -8,6 +8,8 @@ struct UI_File {
   char *path;
 } UI_File;
 
+int ui_scr_width;
+
 Result ui_set_root(Entry *e);
 Result ui_get_root();
 void ui_start();

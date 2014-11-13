@@ -44,9 +44,24 @@ int main(int argc, char *argv[]) {
   char *path, *locale;
   int opt;
 
+#ifdef SCR_WIDTH
+  ui_scr_width = SCR_WIDTH;
+#else
+  ui_scr_width = 0;
+#endif
+
   locale = "";
-  while ((opt = getopt(argc, argv, "hvl:")) != -1) {
+  while ((opt = getopt(argc, argv, "hvl:w:")) != -1) {
     switch (opt) {
+      case 'w':
+        ui_scr_width = atoi(optarg);
+        if (ui_scr_width < 0) {
+          fprintf(stderr, "WARN: Wrong width value, fixed-column is off\n");
+          fprintf(stderr, "Press enter to continue.\n");
+          fgetc(stdin);
+          ui_scr_width = 0;
+        }
+        break;
       case 'l':
         locale = optarg;
         break;

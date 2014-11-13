@@ -1630,7 +1630,10 @@ void ui_start() {
   if (scr_main)
     delwin(scr_main);
 
-  scr_width = COLS < SCR_WIDTH ? (COLS - 2) : SCR_WIDTH;
+  if (ui_scr_width)
+    scr_width = COLS < ui_scr_width ? (COLS - 2) : ui_scr_width;
+  else
+    scr_width = COLS;
   scr_x = ((COLS - scr_width) / 2) - 1;
   scr_x = scr_x < 0 ? 0 : scr_x;
   if (!(scr_main = newwin(LINES, scr_width, 0, scr_x))) {
