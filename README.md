@@ -14,7 +14,9 @@ Features / Bugs:
 - The produced binary is all that is needed
 - Ncursesw is the only runtime dependency
 
-*STATUS:* **Alpha - looks like it's working.**
+*STATUS:* **Alpha - looks like it's working. I'm using it daily.**
+
+There is a [AUR package](https://aur.archlinux.org/packages/snb-git/) for snb - thanks to Celti!
 
 ## Setup
 
@@ -26,17 +28,30 @@ Features / Bugs:
 
 ~~If the build fails the most probable cause is you don't have ncursesw, or there is a configuration problem. Check `Makefile` and adjust paths for includes and/or `ncursesw` library.~~ The Makefile is now a bit smarter. If you can successfully run `ncursesw5-config` then any compile problems are probably due to something else (please file an issue via GitHub in such case).
 
-If the build is successful:
+## Usage and configuration
+
+For starters you should just try:
 
     $ ./bin/snb help.md
 
 This should start snb and present you with an introductory list to help you figure out the key bindings.
 
-## Usage and configuration
+In the current state I recommend running the debug build. Once the binary is compiled it has no dependencies, so feel free to put wherever you want (e.g. `~/bin`).
 
-In the current state I recommend running the debug build. Once the binary is compiled it has no dependencies, so feel free to put wherever you want (e.g. `~/bin`). As stated previously, `help.md` will introduce you to current default key bindings and some other information.
+There are now some command line options available:
 
-The binary accepts a single argument of a file to load on startup.
+    $ ./bin/snb -h
+      Usage: ./bin/snb [options...] (path)
+    
+    Options:
+            -h        - print this message and exit
+            -v        - print version and exit
+            -l LOCALE - force locale
+            -w WIDTH  - set fixed-column mode (0 - off, default: 80)
+
+The distributed `src/user.h` assumes you're using a `UTF-8` locale and have everything setup properly. This option is a simple feature to override your defined locale, which might help if your locale is e.g. `en_US` but you still happen to have everything setup properly so that using `en_US.UTF-8` will work. It will tell you if the call to `setlocale()` failed.
+
+The fixed-column mode refers to a feature usually found only in author-oriented software like [Scrivener](http://www.literatureandlatte.com/scrivener.php) or [WordGrinder](http://wordgrinder.sourceforge.net/), where the text you're working on is displayed in a centred fixed-width 'window'. With the `-w` option you can override this, regardless of `SCR_WIDTH` definition in `src/user.h`.
 
 You can configure the UI appearance by editing `src/user.h` and perhaps `src/colors.c`. You can also set a default file that snb will try to load if no arguments were supplied, however remember the path should be absolute.
 
