@@ -4,7 +4,8 @@
 - Q - exit
 - Current status
 	- ~~Expect it blow up any time~~
-	- Looks like it's working
+	- ~~Looks like it's working~~
+	- Making improvements
 - Browsing mode keys
 	- h, j, k, l - level-aware movement
 	- h, j - scrolling current entry when in partial view mode
@@ -29,6 +30,10 @@
 	- <home>, <end> - move the cursor to beginning, end
 	- <cursor keys> - line-aware movement
 	- <enter> - finish editing
+- Command line
+	- Just run it with '-h' to get the list
+	- As well as the locale, so you may use a decent UTF-8 one
+	- Fixed-column mode can now be overridden
 - Configuration
 	- Most stuff can be configured by editing user.h
 		- You can adjust bullet glyphs there
@@ -52,3 +57,4 @@
 	- Как дела? Отлично!
 	- ¿Cómo estás? ¡Genial!
 	- Comment ça va? Super!
+- Last edit 2014-11-13
