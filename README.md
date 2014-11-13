@@ -49,7 +49,7 @@ There are now some command line options available:
             -l LOCALE - force locale
             -w WIDTH  - set fixed-column mode (0 - off, default: 80)
 
-The distributed `src/user.h` assumes you're using a `UTF-8` locale and have everything setup properly. This option is a simple feature to override your defined locale, which might help if your locale is e.g. `en_US` but you still happen to have everything setup properly so that using `en_US.UTF-8` will work. It will tell you if the call to `setlocale()` failed.
+The distributed `src/user.h` assumes you're using a `UTF-8` locale and have everything setup properly. The `-l` option is a simple feature to override your defined locale, which might help if your locale is e.g. `en_US` but you still happen to have everything setup properly so that using `en_US.UTF-8` will work. It will tell you if the call to `setlocale()` failed.
 
 The fixed-column mode refers to a feature usually found only in author-oriented software like [Scrivener](http://www.literatureandlatte.com/scrivener.php) or [WordGrinder](http://wordgrinder.sourceforge.net/), where the text you're working on is displayed in a centred fixed-width 'window'. With the `-w` option you can override this, regardless of `SCR_WIDTH` definition in `src/user.h`.
 
@@ -82,20 +82,25 @@ I would also recommend the following tools:
 
 Personally I know I won't start any new C project without the above.
 
-- - -
+### Help needed here
+
+I want to keep the whole thing simple therefore: no different IO formats, no config files to parse, no spell-check, no printing, no scripting, etc. Still there are many ways to improve upon this tool.
+
+In order of perceived importance:
+
+- Separating key-bound actions in a way that makes it easy for a user to override the default bindings. This should also enable a smooth transition to ESC-sequence parsing, so that we can do advanced stuff such as interpreting a shifted arrow key! (Ncurses is somewhat weird)
+- Better terminal resize handling. Right now it's mostly a sham, as it works only in browsing mode
+- Tab-completion for open and save as dialogs
+- Code and docs clean up (I'll probably do it)
+- Some abstractions could most probably be done better (i.e. `vitree` and `elmopen` stuff)
+
+### General notes
 
 This was my first attempt at writing: a. non-trivial Unix program in C; b. locale aware program in C; c. ncurses-based interface. As such the code is rather clunky and rough, and you can follow the journey as I left the git history unaltered (do that on your own risk though).
 
 However in the process I became good friends with [valgrind](http://valgrind.org/), [gdb](http://www.gnu.org/software/gdb/) and [clang analyzer](http://clang-analyzer.llvm.org/). Eventually I got myself a working clone of the venerable [hnb](http://hnb.sourceforge.net/) that can speak languages.
 
 The code has rudimentary comments and if you have [doxygen](http://www.stack.nl/~dimitri/doxygen/) installed `make docs` will work. I've also written a very ugly test suite for the data handling part, and if you have [check](http://check.sourceforge.net/) installed `make check` should also work.
-
-What is most need, in my humble opinion:
-
-- Configurable key bindings
-- Better terminal resize handling
-- Tab-completion for open and save as dialogs
-- Some abstractions could most probably be done better (i.e. `vitree` and `elmopen` stuff)
 
 ## Licensing
 
