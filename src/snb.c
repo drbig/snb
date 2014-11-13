@@ -8,6 +8,7 @@
 #include <error.h>
 #include <locale.h>
 #include <ncurses.h>
+#include <unistd.h>
 #include <wchar.h>
 
 #include "user.h"
@@ -15,22 +16,65 @@
 #include "ui.h"
 #include "snb.h"
 
+void usage(char *name) {
+  fprintf(stderr, "  Usage: %s [options...] (path)\n\n", name);
+#ifdef DEFAULT_FILE
+  fprintf(stderr, "Default file: %s\n", DEFAULT_FILE);
+#endif
+  fprintf(stderr, "Options:\n");
+  fprintf(stderr, "\t-h        - print this message and exit\n");
+  fprintf(stderr, "\t-v        - print version and exit\n");
+  fprintf(stderr, "\t-l LOCALE - force locale\n");
+#ifdef SCR_WIDTH
+  fprintf(stderr, "\t-w WIDTH  - set fixed-column mode (0 - off, default: %d)\n", SCR_WIDTH);
+#else
+  fprintf(stderr, "\t-w WIDTH  - set fixed-column mode (0 - off, default: off)\n");
+#endif
+  exit(1);
+}
+
+void version() {
+  wprintf(L"%S\n", INFO_STR);
+  exit(1);
+}
+
 int main(int argc, char *argv[]) {
   FILE *fp;
   Result res;
-  char *path;
+  char *path, *locale;
+  int opt;
+
+  locale = "";
+  while ((opt = getopt(argc, argv, "hvl:")) != -1) {
+    switch (opt) {
+      case 'l':
+        locale = optarg;
+        break;
+      case 'v':
+        version();
+        break;
+      case 'h':
+      default:
+        usage(argv[0]);
+        break;
+    }
+  }
 
   fp = NULL;
 
-  setlocale(LC_ALL, "");
+  if (setlocale(LC_ALL, locale) == NULL) {
+    fprintf(stderr, "WARN: Couldn't change LC_ALL to '%s'\n", locale);
+    fprintf(stderr, "Press enter to continue.\n");
+    fgetc(stdin);
+  }
 
-  if (argc > 1) {
-    fp = fopen(argv[1], "r");
+  if (optind < argc) {
+    fp = fopen(argv[optind], "r");
     if (fp == NULL) {
       perror("Can't open your file");
       exit(1);
     }
-    path = argv[1];
+    path = argv[optind];
   }
 #ifdef DEFAULT_FILE
   else {
