@@ -41,6 +41,7 @@ void version() {
 int main(int argc, char *argv[]) {
   FILE *fp;
   Result res;
+  Entry *root;
   char *path, *locale;
   int opt;
 
@@ -109,7 +110,7 @@ int main(int argc, char *argv[]) {
     }
     fclose(fp);
   } else {
-    res = entry_new(1);
+    res = entry_new(32);
     UI_File.loaded = false;
   }
 
@@ -121,7 +122,10 @@ int main(int argc, char *argv[]) {
 
   ui_start();
 
-  res = ui_set_root((Entry *)res.data);
+  root = (Entry *)res.data;
+  if (!fp)
+    root->length = 0;
+  res = ui_set_root(root);
   if (!res.success) {
     fwprintf(stderr, L"ERROR: %S.\n", res.msg);
     perror("Unix error");
