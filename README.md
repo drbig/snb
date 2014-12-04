@@ -14,7 +14,7 @@ Features / Bugs:
 - The produced binary is all that is needed
 - Ncursesw is the only runtime dependency
 
-*STATUS:* **Alpha - looks like it's working. I'm using it daily.**
+*STATUS:* **Beta - been using it for a while now.**
 
 There is a [AUR package](https://aur.archlinux.org/packages/snb-git/) for snb - thanks to Celti!
 
