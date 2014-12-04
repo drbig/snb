@@ -16,6 +16,8 @@
 	- e, c - expand (more/all), collapse all
 	- d - toggle entry done (cross-out)
 	- D - delete current entry
+	- U - try to restore the last deleted element (aka undo)
+		- This tries to put the restored element where it was before deletion. In theory the restored element should appear near wherever the next, previous or parent element of the deleted entry currently is. But please be careful with realying on this too much.
 	- File operations
 		- r - reload current file
 		- s - save current file
