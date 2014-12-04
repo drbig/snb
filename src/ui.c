@@ -68,6 +68,18 @@ static struct Partial {
   int offset, limit;
 } Partial;
 
+// Undo holds last deleted entry data
+static struct Undo {
+  wchar_t *text;
+  int size;
+  bool crossed;
+  bool present;
+  bool root;
+
+  insert_t dir;
+  struct Entry *other;
+} Undo;
+
 // UI global variables
 static WINDOW *scr_main = NULL;
 static ElmOpen *ElmOpenRoot = NULL;
@@ -919,6 +931,72 @@ void elmopen_clear() {
   ElmOpenRoot = ElmOpenLast = NULL;
 }
 
+/** Backup given element, for simple undo
+ */
+Result undo_set(Entry *e) {
+  wchar_t *buffer;
+  int size;
+
+  size = sizeof(wchar_t) * (e->length + 1);
+  if (Undo.size < size) {
+    buffer = realloc(Undo.text, size);
+    if (!buffer)
+      return result_new(false, NULL, L"Couldn't allocate text buffer for Undo");
+    Undo.text = buffer;
+    Undo.size = size;
+  }
+  wcscpy(Undo.text, e->text);
+  if (e->next) {
+    Undo.other = e->next;
+    Undo.dir = BEFORE;
+  } else if (e->prev) {
+    Undo.other = e->prev;
+    Undo.dir = AFTER;
+  } else if (e->parent) {
+    Undo.other = e->parent;
+    Undo.dir = AFTER;
+  } else
+    Undo.other = NULL;
+  Undo.crossed = e->crossed;
+  if (e == Root->entry)
+    Undo.root = true;
+  else
+    Undo.root = false;
+  Undo.present = true;
+
+  return result_new(true, NULL, L"Backed up entry");
+}
+
+/** Restore backed up element
+ *
+ * Assumes the caller has checked if there is an element to restore.
+ */
+Result undo_restore() {
+  Result res;
+  Entry *n;
+
+  if (Undo.other) {
+    res = entry_insert(Undo.other, Undo.dir, Undo.size);
+    if (!res.success)
+      return res;
+    n = (Entry *)res.data;
+  } else
+    n = Root->entry;
+  wcscpy(n->text, Undo.text);
+  n->length = wcslen(n->text);
+  n->crossed = Undo.crossed;
+  if (Undo.root) {
+    res = element_new(n);
+    if (!res.success)
+      return res;
+    vitree_clear(Root, NULL);
+    Root = (Element *)res.data;
+  }
+  Undo.present = false;
+
+  return result_new(true, n, L"Restored entry");
+}
+
 /** Rebuild visual tree
  *
  * Not that this will not remove the starting element.
@@ -1125,7 +1203,27 @@ bool browse_do(int type, wchar_t input) {
           Current->entry->crossed = !Current->entry->crossed;
           update(CURRENT);
           break;
+        case L'U':
+          if (Undo.present) {
+            res = undo_restore();
+            if (!res.success)
+              dlg_error(res.msg);
+            else {
+              o = (Entry *)res.data;
+              res = vitree_rebuild(Root, NULL);
+              if (!res.success) {
+                dlg_error(res.msg);
+                break;
+              }
+              Current = vitree_find(Root, o, FORWARD);
+              update(ALL);
+            }
+          }
+          break;
         case L'D':
+          res = undo_set(Current->entry);
+          if (!res.success)
+            dlg_error(res.msg);
           res = entry_delete(c);
           if (res.success) {
             elmopen_forget(c);
@@ -1145,8 +1243,10 @@ bool browse_do(int type, wchar_t input) {
             if (Current->next == Current)
               Root->next = Root->prev = NULL;
             update(ALL);
-          } else
+          } else {
+            Undo.present = false;
             dlg_error(res.msg);
+          }
           break;
         case L'h':
           if (Current->open->is) {
@@ -1593,6 +1693,8 @@ Result ui_set_root(Entry *e) {
   Result res;
 
   elmopen_clear();
+  Undo.text = NULL;
+  Undo.size = 0;
 
   if (Root)
     vitree_clear(Root, NULL);
@@ -1691,4 +1793,6 @@ void ui_mainloop() {
       }
     }
   }
+  if (Undo.text)
+    free(Undo.text);
 }
