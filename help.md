@@ -59,4 +59,4 @@
 	- Как дела? Отлично!
 	- ¿Cómo estás? ¡Genial!
 	- Comment ça va? Super!
-- Last edit 2014-11-13
+- Last edit 2014-12-04
