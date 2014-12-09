@@ -39,7 +39,7 @@ docs:
 
 analyze:
 	@echo ====== ANALYZING
-	@scan-build make BINDIR=/tmp
+	@scan-build --status-bugs make BINDIR=/tmp
 
 full-check: clean style debug check analyze
 
@@ -51,4 +51,4 @@ $(BINDIR)/$(PRG): $(DEPS)
 	$(CC) $(CFLAGS) $(LDFLAGS) $(NCURS_INC) -o $@ src/$(PRG).c $(DEPS) $(NCURS_LIB)
 
 %.o: %.c
-	$(CC) $(CFLAGS) $(LDFLAGS) $(NCURS_INC) -c $< -o $@ $(NCURS_LIB)
+	$(CC) $(CFLAGS) $(LDFLAGS) $(NCURS_INC) -c $< -o $@
