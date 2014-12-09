@@ -1,6 +1,11 @@
 language: c
-compiler: gcc
+compiler:
+  - gcc
+  - clang
 before_install:
   - sudo apt-get update -qq
-  - sudo apt-get install -qq libncursesw5 libncursesw5-dev check
-script: make && make check
+  - sudo apt-get install -qq libncursesw5 libncursesw5-dev check clang
+script:
+  - make CC=$CC
+  - make CC=$CC check
+  - make CC=$CC analyze
