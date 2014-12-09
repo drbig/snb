@@ -13,8 +13,9 @@ Features / Bugs:
 - Configuration by editing an include file
 - The produced binary is all that is needed
 - Ncursesw is the only runtime dependency
+- Now provides a rudimentary undo function
 
-*STATUS:* **Beta - been using it for a while now.**
+*STATUS:* **Stable**
 
 There is a [AUR package](https://aur.archlinux.org/packages/snb-git/) for snb - thanks to Celti!
 
@@ -61,10 +62,10 @@ Feel free to hack the code to your liking.
 
 If you wish to contribute back please:
 
-1. clone the repository
-2. make your changes on a separate branch
-3. make sure you have run `make full-check` before committing and there were no errors reported (you'll need a bunch of additional tools for that, listed below)
-4. make a pull request
+1. Clone the repository
+2. Make your changes on a separate branch
+3. Make sure you have run `make full-check` before committing and there were no errors reported (you'll need a bunch of additional tools for that, listed below)
+4. Make a pull request
 
 In other words follow the usual GitHub development workflow.
 
