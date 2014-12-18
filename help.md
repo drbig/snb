@@ -5,7 +5,18 @@
 - Current status
 	- ~~Expect it blow up any time~~
 	- ~~Looks like it's working~~
-	- Making improvements
+	- ~~Making improvements~~
+	- Looks pretty stable
+- Where you can help (future direction)
+	- In loose order of complexity/time-investment:
+	- Code and comments clean up. Some comments are probably wrong.
+		- The lesson is that comments should evolve along the function. Doing it afterwards feels like a burden and hence the output product is of not-best quality.
+	- More readline-like bindings in edit mode
+		- Things like delete word/line, undo/redo, kill/yank/paste.
+	- Wide-char input handling
+		- E.g. Japanese. There is a difference between Unicode, UTF-8, wide- and narrow-characters, bytes/chars and multi-byte characters. And yes, this can be confusing.
+	- Word-wrapping
+	- Help is appreciated in form of PRs on GitHub or patches directly via e-mail.
 - Browsing mode keys
 	- h, j, k, l - level-aware movement
 	- h, j - scrolling current entry when in partial view mode
@@ -32,6 +43,10 @@
 	- <home>, <end> - move the cursor to beginning, end
 	- <cursor keys> - line-aware movement
 	- <enter> - finish editing
+	- Experimental readline-like bindings
+		- C-b (Ctrl-B) - move back one character
+		- C-f (Ctrl-F) - move forward one character
+		- Anything more involved (e.g. move by words, delete world/line, undo/redo, kill/yank/paste) is beyond scope _I'd_ like to work on, but I'd welcome PRs and/or patches that implement such functionality.
 - Command line
 	- Just run it with '-h' to get the list
 	- As well as the locale, so you may use a decent UTF-8 one
@@ -59,4 +74,4 @@
 	- Как дела? Отлично!
 	- ¿Cómo estás? ¡Genial!
 	- Comment ça va? Super!
-- Last edit 2014-12-04
+- Last edit 2014-12-18
