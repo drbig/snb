@@ -482,6 +482,20 @@ char *dlg_file_path(wchar_t *title, int color, dlg_file_path_t mode) {
         break;
       case OK:
         switch (input) {
+          case 2: // Ctrl-B
+            if (cursor % left == 0)
+              refresh = true;
+            cursor--;
+            if (cursor < 0)
+              cursor = 0;
+            break;
+          case 6: // Ctrl-F
+            cursor++;
+            if (cursor % left == 0)
+              refresh = true;
+            if (cursor > len)
+              cursor = len;
+            break;
           case 127:
           case 8:
             if (cursor == 0)
@@ -1467,7 +1481,15 @@ bool edit_do(int type, wchar_t input) {
           curs_set(false);
           update(CURRENT);
           break;
-        case 127:
+        case 2: // Ctrl-B
+          cursor_move(C_LEFT);
+          wrefresh(scr_main);
+          break;
+        case 6: // Ctrl-F
+          cursor_move(C_RIGHT);
+          wrefresh(scr_main);
+          break;
+        case 127: // Ctrl-H, Backspace
         case 8:
           edit_remove(-1);
           break;
@@ -1503,12 +1525,12 @@ bool edit_do(int type, wchar_t input) {
           cursor_move(C_RIGHT);
           wrefresh(scr_main);
           break;
-        case 263:
-        case 127:
+        case 263: // Yeah, that's probably not the best way...
+        case 127: // Ctrl-H, Backspace
         case 8:
           edit_remove(-1);
           break;
-        case KEY_DC:
+        case KEY_DC: // Delete
           edit_remove(0);
           break;
       }
