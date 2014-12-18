@@ -483,6 +483,7 @@ char *dlg_file_path(wchar_t *title, int color, dlg_file_path_t mode) {
       case OK:
         switch (input) {
           case 127:
+          case 8:
             if (cursor == 0)
               break;
             wmemmove(wpath+cursor-1, wpath+cursor, len - cursor);
@@ -1467,6 +1468,7 @@ bool edit_do(int type, wchar_t input) {
           update(CURRENT);
           break;
         case 127:
+        case 8:
           edit_remove(-1);
           break;
         default:
