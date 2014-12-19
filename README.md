@@ -23,11 +23,13 @@ There is a [AUR package](https://aur.archlinux.org/packages/snb-git/) for snb - 
 
 **NOTE**: If you're not using a `UTF-8` locale you should edit `src/user.h` before compiling, as the default bullet strings use Unicode glyphs.
 
+**Debian and derivative users**: You'll probably need *all* of these packages installed: ncurses5, ncurses5-dev, ncursesw5, and ncursesw5-dev. Please ensure you have them before you run `make` (relevant [issue](https://github.com/drbig/snb/issues/2)).
+
+The Makefile is now a bit smarter. If you can successfully run `ncursesw5-config` then any compile problems are probably due to something else (please file an issue via GitHub in such case).
+
     $ git clone https://github.com/drbig/snb.git
     $ cd snb
     $ make debug
-
-~~If the build fails the most probable cause is you don't have ncursesw, or there is a configuration problem. Check `Makefile` and adjust paths for includes and/or `ncursesw` library.~~ The Makefile is now a bit smarter. If you can successfully run `ncursesw5-config` then any compile problems are probably due to something else (please file an issue via GitHub in such case).
 
 ## Usage and configuration
 
