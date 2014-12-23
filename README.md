@@ -14,6 +14,7 @@ Features / Bugs:
 - The produced binary is all that is needed
 - Ncursesw is the only runtime dependency
 - Now provides a rudimentary undo function
+- Column mode, background color and locale can be configured and/or overridden
 
 *STATUS:* **Stable**
 
