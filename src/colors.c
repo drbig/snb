@@ -14,6 +14,6 @@ void colors_init() {
   init_pair(COLOR_INFO   , COLOR_WHITE, COLOR_BLUE  );
   init_pair(COLOR_WARN   , COLOR_BLACK, COLOR_YELLOW);
   init_pair(COLOR_ERROR  , COLOR_BLACK, COLOR_RED   );
-  init_pair(COLOR_CURRENT, COLOR_RED,   COLOR_BLACK );
-  init_pair(COLOR_CROSSED, COLOR_BLACK, COLOR_BLACK );
+  init_pair(COLOR_CURRENT, COLOR_RED,   BG_COLOR    );
+  init_pair(COLOR_CROSSED, COLOR_BLACK, BG_COLOR    );
 }

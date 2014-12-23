@@ -9,6 +9,12 @@
 #define COLOR_CURRENT 6
 #define COLOR_CROSSED 7
 
+// This is special: if the terminal can assume default colors
+// then this is the default background color (= -1). Otherwise
+// this is set to COLOR_BLACK. It should be safe to use within
+// colors_init();
+int BG_COLOR;
+
 void colors_init();
 
 #endif

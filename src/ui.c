@@ -1746,6 +1746,9 @@ Result ui_get_root() {
 void ui_start() {
   initscr();
   start_color();
+  BG_COLOR = COLOR_BLACK;
+  if (use_default_colors() == OK)
+    BG_COLOR = -1;
   cbreak();
   keypad(stdscr, true);
   noecho();
