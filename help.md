@@ -49,8 +49,11 @@
 		- Anything more involved (e.g. move by words, delete world/line, undo/redo, kill/yank/paste) is beyond scope _I'd_ like to work on, but I'd welcome PRs and/or patches that implement such functionality.
 - Command line
 	- Just run it with '-h' to get the list
-	- As well as the locale, so you may use a decent UTF-8 one
-	- Fixed-column mode can now be overridden
+	- Locale can be overriden, so you may use a decent UTF-8 one
+	- Fixed-column mode can be both configured and overriden
+		- Uses column mode by default
+	- Background color 'approach' can now be both configured and overriden
+		- Uses terminal background by default
 - Configuration
 	- Most stuff can be configured by editing user.h
 		- You can adjust bullet glyphs there
@@ -74,4 +77,4 @@
 	- Как дела? Отлично!
 	- ¿Cómo estás? ¡Genial!
 	- Comment ça va? Super!
-- Last edit 2014-12-18
+- Last edit 2014-12-23
