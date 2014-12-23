@@ -1747,7 +1747,7 @@ void ui_start() {
   initscr();
   start_color();
   BG_COLOR = COLOR_BLACK;
-  if (use_default_colors() == OK)
+  if (use_term_colors && (use_default_colors() == OK))
     BG_COLOR = -1;
   cbreak();
   keypad(stdscr, true);

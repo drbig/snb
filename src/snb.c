@@ -16,6 +16,8 @@
 #include "ui.h"
 #include "snb.h"
 
+bool use_term_colors = !FORCE_BLACK_BG;
+
 void usage(char *name) {
   fprintf(stderr, "  Usage: %s [options...] (path)\n\n", name);
 #ifdef DEFAULT_FILE
@@ -30,6 +32,7 @@ void usage(char *name) {
 #else
   fprintf(stderr, "\t-w WIDTH  - set fixed-column mode (0 - off, default: off)\n");
 #endif
+  fprintf(stderr, "\t-b        - use term bg color or black (default: %s)\n", FORCE_BLACK_BG ? "black" : "term");
   exit(1);
 }
 
@@ -52,8 +55,11 @@ int main(int argc, char *argv[]) {
 #endif
 
   locale = "";
-  while ((opt = getopt(argc, argv, "hvl:w:")) != -1) {
+  while ((opt = getopt(argc, argv, "hvl:w:b")) != -1) {
     switch (opt) {
+      case 'b':
+        use_term_colors = !use_term_colors;
+        break;
       case 'w':
         ui_scr_width = atoi(optarg);
         if (ui_scr_width < 0) {
