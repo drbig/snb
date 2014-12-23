@@ -32,7 +32,8 @@ void usage(char *name) {
 #else
   fprintf(stderr, "\t-w WIDTH  - set fixed-column mode (0 - off, default: off)\n");
 #endif
-  fprintf(stderr, "\t-b        - use term bg color or black (default: %s)\n", FORCE_BLACK_BG ? "black" : "term");
+  fprintf(stderr, "\t-b        - use term bg color or black (default: %s)\n",
+          FORCE_BLACK_BG ? "black" : "term");
   exit(1);
 }
 
