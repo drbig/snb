@@ -6,6 +6,7 @@ typedef struct Entry {
   int length;
   int size;
   bool crossed;
+  bool bold;
 
   struct Entry *prev;
   struct Entry *next;

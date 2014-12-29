@@ -65,7 +65,7 @@ Result entry_new(int length) {
 Result data_load(FILE *input) {
   Result ret, res;
   Entry *new, *r, *c;
-  wchar_t *line;
+  wchar_t *line, *data;
   int line_nr, current_level;
 
   if (!(line = calloc(LINE_MAX_LEN, sizeof(wchar_t))))
@@ -79,8 +79,7 @@ Result data_load(FILE *input) {
     new = NULL;
     int length = wcslen(line);
     if (length <= 1) continue;  // ignore empty lines
-    line[length-1] = L'\0';     // kill newline char
-    --length;
+    line[--length] = L'\0';     // kill newline char
 
     int level = 0;
     while ((line[level] == L'\t') && (level < length))
@@ -129,16 +128,29 @@ Result data_load(FILE *input) {
       c = new;
     }
 
-    if (length - level - 2 >= 4) {
-      if ((line[level+2] == L'~') && (line[level+3] == L'~') &&
-          (line[length-1] == L'~') && (line[length-2] == L'~')) {
+    c->length = length - level - 2;
+    data = line+level+2;
+
+    if (c->length >= 4) {
+      if ((data[0] == L'~') && (data[1] == L'~') &&
+          (data[c->length-1] == L'~') && (data[c->length-2] == L'~')) {
         c->crossed = true;
-        line[length-2] = L'\0';
+        data[c->length-2] = L'\0';
+        c->length -= 4;
+        data += 2;
+      }
+    }
+    if (c->length >= 4) {
+      if ((data[0] == L'*') && (data[1] == L'*') &&
+          (data[c->length-1] == L'*') && (data[c->length-2] == L'*')) {
+        c->bold = true;
+        data[c->length-2] = L'\0';
+        c->length -= 4;
+        data += 2;
       }
     }
 
-    c->length = length - level - (c->crossed * 4) - 2;
-    wcscpy(c->text, line+level+(2*c->crossed)+2);
+    wcscpy(c->text, data);
 
     ++line_nr;
   }
@@ -183,12 +195,21 @@ Result data_dump(Entry *e, FILE *output) {
 
     for (t = level; t > 0; --t)
       if (fwprintf(output, L"\t") != 1) goto error;
+
     if (fwprintf(output, L"- ") != 2) goto error;
+
     if (e->crossed)
       if (fwprintf(output, L"~~") != 2) goto error;
+    if (e->bold)
+      if (fwprintf(output, L"**") != 2) goto error;
+
     if (fwprintf(output, L"%S", e->text) != e->length) goto error;
+
+    if (e->bold)
+      if (fwprintf(output, L"**") != 2) goto error;
     if (e->crossed)
       if (fwprintf(output, L"~~") != 2) goto error;
+
     if (fwprintf(output, L"\n") != 1) goto error;
 
     if (e->child) {
