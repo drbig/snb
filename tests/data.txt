@@ -1,5 +1,7 @@
 - This is first short line - łąść elato
 - ~~This is second short line~~
+- **This is an important line**
+- ~~**And this used to be an important line**~~
 - Next one
 - This is a relatively longer line with some ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
 - First nested stuff

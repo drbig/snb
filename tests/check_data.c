@@ -35,8 +35,8 @@ void data_debug_dump(Entry *e, FILE *output) {
   else
     fwprintf(output, L"- ");
   fwprintf(output, L"\"%S\"", e->text);
-  fwprintf(output, L" (l:%d c:%d s:%d len:%d wlen:%d)\n",
-           level, e->crossed, e->size, e->length, wcslen(e->text));
+  fwprintf(output, L" (l:%d c:%d b:%d s:%d len:%d wlen:%d)\n",
+           level, e->crossed, e->bold, e->size, e->length, wcslen(e->text));
   if (e->child)
     data_debug_dump(e->child, output);
   if (e->next)
@@ -72,8 +72,8 @@ START_TEST(test_load_dump) {
     ck_abort_msg("Parsing error");
 
   root = (Entry *)res.data;
-  //if (verbose)
-  //  data_debug_dump(root, stderr);
+  if (verbose)
+    data_debug_dump(root, stderr);
   res = data_dump(root, sink);
   if (dump_error(res)) {
     data_unload(root);
