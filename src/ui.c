@@ -1218,6 +1218,10 @@ bool browse_do(int type, wchar_t input) {
           Current->entry->crossed = !Current->entry->crossed;
           update(CURRENT);
           break;
+        case L'f':
+          Current->entry->bold = !Current->entry->bold;
+          update(CURRENT);
+          break;
         case L'U':
           if (Undo.present) {
             res = undo_restore();
@@ -1617,6 +1621,8 @@ void element_draw(Element *e) {
 
   if (en->crossed)
     wattron(scr_main, A_BOLD | COLOR_PAIR(COLOR_CROSSED));
+  if (en->bold)
+    wattron(scr_main, BOLD_ATTRS);
   if ((e == Current) && Partial.is) {
     offset = Partial.offset * e->width;
     p = 2 + Partial.offset;
@@ -1630,6 +1636,8 @@ void element_draw(Element *e) {
     if (y >= LINES) break;
     mvwaddnwstr(scr_main, y, x, en->text+((p-1)*e->width), e->width);
   }
+  if (en->bold)
+    wattroff(scr_main, BOLD_ATTRS);
   if (en->crossed)
     wattroff(scr_main, A_BOLD | COLOR_PAIR(COLOR_CROSSED));
   if (y >= LINES) {

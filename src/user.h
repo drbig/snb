@@ -15,6 +15,7 @@
 // ui.c
 #define SCR_WIDTH       80
 #define FORCE_BLACK_BG  false
+#define BOLD_ATTRS      A_BOLD
 
 #define BULLET_WIDTH    3
 #define BULLET_CROSSED  L" · "
