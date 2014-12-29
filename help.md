@@ -4,9 +4,8 @@
 - Q - exit
 - Current status
 	- ~~Expect it blow up any time~~
-	- ~~Looks like it's working~~
-	- ~~Making improvements~~
-	- Looks pretty stable
+	- **Stable, seems to be used not only by me**
+		- Slow feature creep unless someone wants to help
 - Where you can help (future direction)
 	- In loose order of complexity/time-investment:
 	- Code and comments clean up. Some comments are probably wrong.
@@ -27,6 +26,7 @@
 	- e, c - expand (more/all), collapse all
 	- d - toggle entry done (cross-out)
 	- D - delete current entry
+	- f - toggle entry highlight (bold)
 	- U - try to restore the last deleted element (aka undo)
 		- This tries to put the restored element where it was before deletion. In theory the restored element should appear near wherever the next, previous or parent element of the deleted entry currently is. But please be careful with realying on this too much.
 	- File operations
@@ -58,10 +58,12 @@
 	- Most stuff can be configured by editing user.h
 		- You can adjust bullet glyphs there
 		- And also translate most of the UI
+		- Defaults for bg color, column mode an highlight attributes
 	- You can modify colors in colors.c
 	- Changing key bindings is somewhat more involved, but feel free to extract the currently hard-coded ones into a separate header file (e.g. keys.h)
 - File format information
 	- Markdown compatible (uses '~~' for crossed-out items, so technically the format is GFM - GitHub Flavoured Markdown)
+	- Highlighted entries are saved as bold text ('**'). The order is always crossed, then bold. (e.g. crossed-out bold 'item' -> '~~**item**~~')
 	- It is very important to use tabs for indentation
 	- The file should be encoded according to the current locale
 - Bugs/Features
@@ -77,4 +79,4 @@
 	- Как дела? Отлично!
 	- ¿Cómo estás? ¡Genial!
 	- Comment ça va? Super!
-- Last edit 2014-12-23
+- **Last edit 2014-12-29**
