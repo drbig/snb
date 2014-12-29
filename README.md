@@ -13,8 +13,9 @@ Features / Bugs:
 - Configuration by editing an include file
 - The produced binary is all that is needed
 - Ncursesw is the only runtime dependency
-- Now provides a rudimentary undo function
-- Column mode, background color and locale can be configured and/or overridden
+- Provides a rudimentary undo function
+- Now you can both cross-out and highlight entries
+- Column mode, background color, highlight attributes and locale can be configured and/or overridden on command line
 
 *STATUS:* **Stable**
 
@@ -52,6 +53,7 @@ There are now some command line options available:
             -v        - print version and exit
             -l LOCALE - force locale
             -w WIDTH  - set fixed-column mode (0 - off, default: 80)
+            -b        - use term bg color or black (default: term)
 
 The distributed `src/user.h` assumes you're using a `UTF-8` locale and have everything setup properly. The `-l` option is a simple feature to override your defined locale, which might help if your locale is e.g. `en_US` but you still happen to have everything setup properly so that using `en_US.UTF-8` will work. It will tell you if the call to `setlocale()` failed.
 
