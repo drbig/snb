@@ -10,7 +10,6 @@ VERSION=$(shell git describe --tags --always --dirty --match "[0-9A-Z]*.[0-9A-Z]
 NCURS_INC=$(shell ncursesw5-config --cflags)
 NCURS_LIB=$(shell ncursesw5-config --libs)
 
-
 .PHONY: clean check style docs analyze full-check
 
 all: version $(BINDIR)/$(PRG)
