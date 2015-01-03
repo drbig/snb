@@ -2,8 +2,7 @@ CC?=cc
 CFLAGS?=-O2
 CFLAGS+=-std=c99
 CFLAGS+=-Wall -Werror -Wno-implicit-function-declaration
-CFLAGS+=-fstack-protector-all -fsanitize-undefined-trap-on-error -fsanitize=bounds -ftrapv
-CFLAGS+=-fPIC -fPIE
+CFLAGS+=-fstack-protector-all -fPIC -fPIE
 LDFLAGS=
 STYLE=-nA2s2SHxC100xj
 BINDIR=bin
