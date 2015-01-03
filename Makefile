@@ -1,14 +1,19 @@
-CC=gcc
-CFLAGS=-Wall -Werror
+CC?=cc
+CFLAGS=-O2 -std=c99
+CFLAGS+=-Wall -Werror -Wno-implicit-function-declaration
+CFLAGS+=-fstack-protector-all -fsanitize-undefined-trap-on-error -fsanitize=bounds -ftrapv
+CFLAGS+=-fPIC -fPIE
 LDFLAGS=
 STYLE=-nA2s2SHxC100xj
 BINDIR=bin
 PRG=snb
 DEPS=src/data.o src/ui.o src/colors.o
 TESTS=check_data
-VERSION=$(shell git describe --tags --always --dirty --match "[0-9A-Z]*.[0-9A-Z]*")
-NCURS_INC=$(shell ncursesw5-config --cflags)
-NCURS_LIB=$(shell ncursesw5-config --libs)
+GIT?=git
+VERSION=`${GIT} describe --tags --always --dirty --match "[0-9A-Z]*.[0-9A-Z]*"`
+NCURS_CONF?=ncursesw5-config
+NCURS_INC=`${NCURS_CONF} --cflags`
+NCURS_LIB=`${NCURS_CONF} --libs`
 
 .PHONY: clean check style docs analyze full-check
 
