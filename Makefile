@@ -1,6 +1,6 @@
 CC?=cc
 CFLAGS?=-O2
-CFLAGS+=-I/usr/local/include -std=c99
+CFLAGS+=-std=c99
 CFLAGS+=-Wall -Werror -Wno-implicit-function-declaration
 CFLAGS+=-fstack-protector-all -fsanitize-undefined-trap-on-error -fsanitize=bounds -ftrapv
 CFLAGS+=-fPIC -fPIE
@@ -14,10 +14,10 @@ PRG=snb
 DEPS=$(OBJDIR)/data.o $(OBJDIR)/ui.o $(OBJDIR)/colors.o
 TESTS=check_data
 GIT?=git
-VERSION=`${GIT} describe --tags --always --dirty --match "[0-9A-Z]*.[0-9A-Z]*"`
+VERSION?=$(shell ${GIT} describe --tags --always --dirty --match "[0-9A-Z]*.[0-9A-Z]*")
 NCURS_CONF?=ncursesw5-config
-NCURS_INC:=`${NCURS_CONF} --cflags`
-NCURS_LIB:=`${NCURS_CONF} --libs`
+NCURS_INC?=$(shell ${NCURS_CONF} --cflags)
+NCURS_LIB?=$(shell ${NCURS_CONF} --libs)
 
 .PHONY: clean check style docs analyze full-check
 
@@ -57,9 +57,6 @@ tests/$(TESTS): $(DEPS)
 $(BINDIR)/$(PRG): $(DEPS)
 	@mkdir -p $(BINDIR)/
 	$(CC) $(CFLAGS) $(LDFLAGS) $(NCURS_INC) -o $@ $(SRCDIR)/$(PRG).c $(DEPS) $(NCURS_LIB)
-
-$(DEPS): $(.PREFIX).c
-	$(CC) $(CFLAGS) $(LDFLAGS) $(NCURS_INC) -c $< -o $@
 
 %.o: %.c
 	$(CC) $(CFLAGS) $(LDFLAGS) $(NCURS_INC) -c $< -o $@
