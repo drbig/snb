@@ -1,40 +1,44 @@
 CC?=cc
-CFLAGS=-O2 -std=c99
+CFLAGS?=-O2
+CFLAGS+=-I/usr/local/include -std=c99
 CFLAGS+=-Wall -Werror -Wno-implicit-function-declaration
 CFLAGS+=-fstack-protector-all -fsanitize-undefined-trap-on-error -fsanitize=bounds -ftrapv
 CFLAGS+=-fPIC -fPIE
 LDFLAGS=
 STYLE=-nA2s2SHxC100xj
 BINDIR=bin
+SRCDIR=src
+OBJDIR=src
+TESTDIR=tests
 PRG=snb
-DEPS=src/data.o src/ui.o src/colors.o
+DEPS=$(OBJDIR)/data.o $(OBJDIR)/ui.o $(OBJDIR)/colors.o
 TESTS=check_data
 GIT?=git
 VERSION=`${GIT} describe --tags --always --dirty --match "[0-9A-Z]*.[0-9A-Z]*"`
 NCURS_CONF?=ncursesw5-config
-NCURS_INC=`${NCURS_CONF} --cflags`
-NCURS_LIB=`${NCURS_CONF} --libs`
+NCURS_INC:=`${NCURS_CONF} --cflags`
+NCURS_LIB:=`${NCURS_CONF} --libs`
 
 .PHONY: clean check style docs analyze full-check
 
 all: version $(BINDIR)/$(PRG)
 
 version:
-	@echo "#define VERSION L\"$(VERSION)\"" > src/version.h
+	@echo "#define VERSION L\"$(VERSION)\"" > $(SRCDIR)/version.h
 
 clean:
-	@rm -f src/*.o $(BINDIR)/$(PRG) tests/$(TESTS)
+	@rm -f $(OBJDIR)/*.o $(BINDIR)/$(PRG) $(TESTDIR)/$(TESTS)
 
 debug: CFLAGS+=-DDEBUG -g
 debug: all
 
-check: tests/$(TESTS)
+check: $(TESTDIR)/$(TESTS)
 	@echo ====== TESTING
-	@./tests/$(TESTS)
+	@./$(TESTDIR)/$(TESTS)
 
 style:
 	@echo ====== STYLING CODE
-	@astyle $(STYLE) src/*.c src/*.h tests/*.c
+	@astyle $(STYLE) $(SRCDIR)/*.c $(SRCDIR)/*.h $(TESTDIR)/*.c
 
 docs:
 	@echo ====== GENERATING DOCS
@@ -48,11 +52,14 @@ analyze:
 full-check: clean style debug check analyze
 
 tests/$(TESTS): $(DEPS)
-	$(CC) $(CFLAGS) $(LDFLAGS) $(NCURS_INC) -o $@ tests/$(TESTS).c $(DEPS) $(NCURS_LIB) -lcheck
+	$(CC) $(CFLAGS) $(LDFLAGS) $(NCURS_INC) -o $@ $(TESTDIR)/$(TESTS).c $(DEPS) $(NCURS_LIB) -lcheck
 
 $(BINDIR)/$(PRG): $(DEPS)
 	@mkdir -p $(BINDIR)/
-	$(CC) $(CFLAGS) $(LDFLAGS) $(NCURS_INC) -o $@ src/$(PRG).c $(DEPS) $(NCURS_LIB)
+	$(CC) $(CFLAGS) $(LDFLAGS) $(NCURS_INC) -o $@ $(SRCDIR)/$(PRG).c $(DEPS) $(NCURS_LIB)
+
+$(DEPS): $(.PREFIX).c
+	$(CC) $(CFLAGS) $(LDFLAGS) $(NCURS_INC) -c $< -o $@
 
 %.o: %.c
 	$(CC) $(CFLAGS) $(LDFLAGS) $(NCURS_INC) -c $< -o $@
