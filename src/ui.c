@@ -1160,33 +1160,33 @@ bool browse_do(int type, wchar_t input) {
   switch (type) {
     case OK:
       switch (input) {
-        case L'o':
+        case KEY_OPEN_F:
           if (dlg_bool(DLG_OPEN, DLG_MSG_SURE, COLOR_WARN)) {
             if ((path = dlg_open()) != NULL)
               file_load(path);
           }
           break;
-        case L'r':
+        case KEY_RELOAD_F:
           if (UI_File.loaded) {
             if (dlg_reload())
               file_load(UI_File.path);
           } else
             dlg_error(DLG_ERR_RELOAD);
           break;
-        case L's':
+        case KEY_SAVE_F:
           if (UI_File.loaded) {
             if (dlg_save())
               file_save(UI_File.path);
           } else
             dlg_error(DLG_ERR_SAVE);
           break;
-        case L'S':
+        case KEY_SAVEAS_F:
           if (dlg_bool(DLG_SAVE, DLG_MSG_SAVEAS, COLOR_WARN)) {
             if ((path = dlg_save_as()) != NULL)
               file_save(path);
           }
           break;
-        case L'i':
+        case KEY_INSERT_E:
           res = entry_insert(c, AFTER, scr_width);
           if (res.success) {
             o = (Entry *)res.data;
@@ -1202,7 +1202,7 @@ bool browse_do(int type, wchar_t input) {
             dlg_error(res.msg);
             break;
           }
-        case L'\n':
+        case KEY_EDIT_E:
           Mode = EDIT;
           update(CURRENT);
           curs_set(true);
@@ -1210,19 +1210,19 @@ bool browse_do(int type, wchar_t input) {
           cursor_end();
           wrefresh(scr_main);
           break;
-        case L'Q':
+        case KEY_QUIT:
           if (dlg_bool(DLG_QUIT, DLG_MSG_QUIT, COLOR_WARN))
             return false;
           break;
-        case L'd':
+        case KEY_CROSS_E:
           Current->entry->crossed = !Current->entry->crossed;
           update(CURRENT);
           break;
-        case L'f':
+        case KEY_BOLD_E:
           Current->entry->bold = !Current->entry->bold;
           update(CURRENT);
           break;
-        case L'U':
+        case KEY_UNDO_E:
           if (Undo.present) {
             res = undo_restore();
             if (!res.success)
@@ -1239,7 +1239,7 @@ bool browse_do(int type, wchar_t input) {
             }
           }
           break;
-        case L'D':
+        case KEY_DELETE_E:
           res = undo_set(Current->entry);
           if (!res.success)
             dlg_error(res.msg);
@@ -1267,7 +1267,7 @@ bool browse_do(int type, wchar_t input) {
             dlg_error(res.msg);
           }
           break;
-        case L'h':
+        case KEY_LEFT_E:
           if (Current->open->is) {
             Current->open->is = false;
             if (c->next)
@@ -1287,7 +1287,7 @@ bool browse_do(int type, wchar_t input) {
             update(ALL);
           }
           break;
-        case L'j':
+        case KEY_NEXT_E:
           if (Partial.is && Partial.more) {
             Partial.offset++;
             if (Partial.offset == Partial.limit)
@@ -1305,7 +1305,7 @@ bool browse_do(int type, wchar_t input) {
             }
           }
           break;
-        case L'k':
+        case KEY_PREV_E:
           if (Partial.is && Partial.less) {
             Partial.offset--;
             if (Partial.offset == 0)
@@ -1323,7 +1323,7 @@ bool browse_do(int type, wchar_t input) {
             }
           }
           break;
-        case L'l':
+        case KEY_RIGHT_E:
           if (Current->open->is)
             new = Current->next;
           else if (c->child) {
@@ -1340,7 +1340,7 @@ bool browse_do(int type, wchar_t input) {
             update(ALL);
           }
           break;
-        case L'H':
+        case KEY_DEDENT_E:
           if (c->parent)
             o = c->parent->next;
           if (o)
@@ -1355,7 +1355,7 @@ bool browse_do(int type, wchar_t input) {
             update(ALL);
           }
           break;
-        case L'J':
+        case KEY_MOVEUP_E:
           o = c->next;
           if (entry_move(c, DOWN)) {
             if (Current == Root) {
@@ -1377,7 +1377,7 @@ bool browse_do(int type, wchar_t input) {
             update(ALL);
           }
           break;
-        case L'K':
+        case KEY_MOVEDOWN_E:
           o = c->prev;
           if (entry_move(c, UP)) {
             if (o && (o == Root->entry)) {
@@ -1398,7 +1398,7 @@ bool browse_do(int type, wchar_t input) {
             update(ALL);
           }
           break;
-        case L'L':
+        case KEY_INDENT_E:
           o = c->prev;
           if (c->parent && c->parent->next)
             oo = c->parent->next;
@@ -1416,19 +1416,19 @@ bool browse_do(int type, wchar_t input) {
             update(ALL);
           }
           break;
-        case L'n':
+        case KEY_NEXT_V:
           if (Current->next) {
             Current = Current->next;
             update(ALL);
           }
           break;
-        case L'm':
+        case KEY_PREV_V:
           if (Current->prev) {
             Current = Current->prev;
             update(ALL);
           }
           break;
-        case L'c':
+        case KEY_COLLAPSE:
           new = Current;
           while (new->level != 0)
             new = new->prev;
@@ -1442,7 +1442,7 @@ bool browse_do(int type, wchar_t input) {
           Current = vitree_find(Root, o, FORWARD);
           update(ALL);
           break;
-        case L'e':
+        case KEY_EXPAND:
           o = Current->entry;
           elmopen_set(true, NULL, NULL);
           r = vitree_rebuild(Root, NULL);

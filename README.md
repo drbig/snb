@@ -27,6 +27,10 @@ There is a [AUR package](https://aur.archlinux.org/packages/snb-git/) for snb - 
 
 **Debian and derivative users**: You'll probably need *all* of these packages installed: ncurses5, ncurses5-dev, ncursesw5, and ncursesw5-dev. Please ensure you have them before you run `make` (relevant [issue](https://github.com/drbig/snb/issues/2)).
 
+**FreeBSD users**: You'll need [devel/ncurses](http://www.freshports.org/devel/ncurses). Also, `make debug` doesn't work with BSD make, you can do a debug build with `CFLAGS="-DDEBUG -g" make`.
+
+**OS X users**: You'll need a newer version of ncurses. If you use [Homebrew](http://brew.sh), `brew install homebrew/dupes/ncurses` and pass the path to `make` like so: `make NCURS_CONF=/usr/local/opt/ncurses/bin/ncursesw5-config`
+
 The Makefile is now a bit smarter. If you can successfully run `ncursesw5-config` then any compile problems are probably due to something else (please file an issue via GitHub in such case).
 
     $ git clone https://github.com/drbig/snb.git
