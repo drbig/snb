@@ -15,6 +15,8 @@
 	- Wide-char input handling
 		- E.g. Japanese. There is a difference between Unicode, UTF-8, wide- and narrow-characters, bytes/chars and multi-byte characters. And yes, this can be confusing.
 	- Word-wrapping
+	- Building on other platforms
+		- This should build cleanly on Linux, FreeBSD and OS X. Other distro/OS/platform confirmations and/or issues are welcome.
 	- Help is appreciated in form of PRs on GitHub or patches directly via e-mail.
 - Browsing mode keys
 	- h, j, k, l - level-aware movement
@@ -59,8 +61,9 @@
 		- You can adjust bullet glyphs there
 		- And also translate most of the UI
 		- Defaults for bg color, column mode an highlight attributes
+		- The main key bindings are now also configurable, but note that you're limited only to 'normal characters' i.e. no escape sequences/'special' keys (e.g. you can't bind up arrow, Ctrl-<letter> etc.)
 	- You can modify colors in colors.c
-	- Changing key bindings is somewhat more involved, but feel free to extract the currently hard-coded ones into a separate header file (e.g. keys.h)
+	- ~~Changing key bindings is somewhat more involved, but feel free to extract the currently hard-coded ones into a separate header file (e.g. keys.h)~~
 - File format information
 	- Markdown compatible (uses '~~' for crossed-out items, so technically the format is GFM - GitHub Flavoured Markdown)
 	- Highlighted entries are saved as bold text ('**'). The order is always crossed, then bold. (e.g. crossed-out bold 'item' -> '~~**item**~~')
@@ -79,4 +82,4 @@
 	- Как дела? Отлично!
 	- ¿Cómo estás? ¡Genial!
 	- Comment ça va? Super!
-- **Last edit 2014-12-29**
+- **Last edit 2015-01-04**
