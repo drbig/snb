@@ -10,14 +10,15 @@ Features / Bugs:
 - Works with multi-byte encodings (including Unicode)
 - Editing wide-char (e.g. Japanese) languages doesn't work yet, but browsing should
 - Keyboard driven 'content oriented' UI
-- Configuration by editing an include file
 - The produced binary is all that is needed
 - Ncursesw is the only runtime dependency
 - Provides a rudimentary undo function
-- Now you can both cross-out and highlight entries
+- You can both cross-out and highlight entries
+- Configuration by editing an include file
 - Column mode, background color, highlight attributes and locale can be configured and/or overridden on command line
+- Customizable key bindings
 
-*STATUS:* **Stable**
+*STATUS:* **Stable** - should build cleanly on: Linux, FreeBSD, OS X.
 
 There is a [AUR package](https://aur.archlinux.org/packages/snb-git/) for snb - thanks to Celti!
 
@@ -27,7 +28,7 @@ There is a [AUR package](https://aur.archlinux.org/packages/snb-git/) for snb - 
 
 **Debian and derivative users**: You'll probably need *all* of these packages installed: ncurses5, ncurses5-dev, ncursesw5, and ncursesw5-dev. Please ensure you have them before you run `make` (relevant [issue](https://github.com/drbig/snb/issues/2)).
 
-**FreeBSD users**: You'll need [devel/ncurses](http://www.freshports.org/devel/ncurses). Also, `make debug` doesn't work with BSD make, you can do a debug build with `CFLAGS="-DDEBUG -g" make`.
+**FreeBSD users**: You'll need [devel/ncurses](http://www.freshports.org/devel/ncurses). Also, `make debug` doesn't work with BSD make, you can do a debug build with `CFLAGS="-DDEBUG -g" make`. If you happen to have newer ncurses you might need to add `NCURS_CONF=ncursesw6-config` (i.e. adjust the number to what you actually have).
 
 **OS X users**: You'll need a newer version of ncurses. If you use [Homebrew](http://brew.sh), `brew install homebrew/dupes/ncurses` and pass the path to `make` like so: `make NCURS_CONF=/usr/local/opt/ncurses/bin/ncursesw5-config`
 
@@ -98,7 +99,7 @@ I want to keep the whole thing simple therefore: no different IO formats, no con
 
 In order of perceived importance:
 
-- Separating key-bound actions in a way that makes it easy for a user to override the default bindings. This should also enable a smooth transition to ESC-sequence parsing, so that we can do advanced stuff such as interpreting a shifted arrow key! (Ncurses is somewhat weird)
+- ~~Separating key-bound actions in a way that makes it easy for a user to override the default bindings.~~ This should also enable a smooth transition to ESC-sequence parsing, so that we can do advanced stuff such as interpreting a shifted arrow key! (Ncurses is somewhat weird)
 - Better terminal resize handling. Right now it's mostly a sham, as it works only in browsing mode
 - Tab-completion for open and save as dialogs
 - Code and docs clean up (I'll probably do it)
