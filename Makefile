@@ -17,8 +17,10 @@ VERSION?=$(shell ${GIT} describe --tags --always --dirty --match "[0-9A-Z]*.[0-9
 NCURS_CONF?=ncursesw5-config
 NCURS_INC?=$(shell ${NCURS_CONF} --cflags)
 NCURS_LIB?=$(shell ${NCURS_CONF} --libs)
+INSTALL=install
+PREFIX=/usr
 
-.PHONY: clean check style docs analyze full-check
+.PHONY: clean check style docs analyze full-check install
 
 all: version $(BINDIR)/$(PRG)
 
@@ -30,6 +32,11 @@ clean:
 
 debug: CFLAGS+=-DDEBUG -g
 debug: all
+
+install: all
+	$(INSTALL) -Dm755 $(BINDIR)/$(PRG) $(DESTDIR)$(PREFIX)/bin/$(PRG)
+	$(INSTALL) -Dm644 help.md $(DESTDIR)$(PREFIX)/share/docs/$(PRG)/help.md
+	$(INSTALL) -Dm444 snb.1 $(DESTDIR)$(PREFIX)/local/man/man1/snb.1
 
 check: $(TESTDIR)/$(TESTS)
 	@echo ====== TESTING
