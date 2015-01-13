@@ -1,0 +1,37 @@
+.TH snb "1" "January 13, 2015"
+.SH NAME
+snb \- simple hierarchical notebook
+.SH SYNOPSIS
+.B snb
+[\fIOPTIONS\fR]
+[\fIFILE\fR]
+.SH DESCRIPTION
+snb is a minimalistic hierarchical notebook for console that is locale aware.
+
+It has been inspired primarily by HNB, with some concepts taken from writing tools such as Word Grinder and Scrivener. Its intended use-case is for quick-and-dirty notes mixed with simple "to do"-like lists. It is not meant to be a replacement for tools like Emacs' org-mode or Taskwarrior.
+.SH OPTIONS
+.TP
+.BR \-h
+Display help message and exit.
+.TP
+.BR \-v
+Print version and copyright message and exit.
+.TP
+.BR \-l " " \fILOCALE\fR
+Try to enforce LOCALE. Useful if you don't use an Unicode locale by default.
+.TP
+.BR \-w " " \fIWIDTH\fR
+When WIDTH is 0 it will turn off column mode (i.e. the interface will fit to terminal width). If number other than zero is supplied the column mode is on, and the interface will be centered and fitted to be at most WIDTH characters wide.
+.TP
+.BR \-b
+By default snb will try to use the default terminal color for the background color. If this option is supplied the background color is set to 'black'.
+.SH QUICKSTART
+snb should ship with help.md file which is both the main documentation source and a tutorial at the same time.
+.SH CONFIGURATION
+You can configure key bindings, messages, colors and some other options in the config.h file in the source tree. This implies you'll need to recompile, and possibly reinstall, for the changes to take effect. This is intentional.
+.SH AUTHOR
+Written by Piotr S. Staszewski and contributors.
+
+Source code available at https://github.com/drbig/snb
+.SH COPYRIGHT
+Copyright \(co 2014 - 2015 Piotr S. Staszewski. Licensed under a BSD two-clause license.
