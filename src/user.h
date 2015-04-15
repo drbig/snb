@@ -54,6 +54,8 @@
 #define KEY_PREV_V      L'm'
 #define KEY_COLLAPSE    L'c'
 #define KEY_EXPAND      L'e'
+#define KEY_TOP         L'g'
+#define KEY_BOTTOM      L'G'
 
 #define DLG_YESNO       L" y/n "
 #define DLG_INFO        L" INFO "

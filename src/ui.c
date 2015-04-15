@@ -1453,6 +1453,17 @@ bool browse_do(int type, wchar_t input) {
           Current = vitree_find(Root, o, FORWARD);
           update(ALL);
           break;
+        case KEY_TOP:
+          Current = Root;
+          update(ALL);
+          break;
+        case KEY_BOTTOM:
+          o = Root->entry;
+          while (o->next)
+            o = o->next;
+          Current = vitree_find(Current, o, FORWARD);
+          update(ALL);
+          break;
       }
       break;
     case KEY_CODE_YES:
