@@ -22,6 +22,7 @@
 	- h, j, k, l - level-aware movement
 	- h, j - scrolling current entry when in partial view mode
 	- n, m - visual movement
+	- g, G - go to top, bottom of the document
 	- JK - move current entry down/up
 	- HL - de/indent current entry
 	- In other words hjkl is normal movement, HJKL is 'dragging' movement
@@ -82,4 +83,4 @@
 	- Как дела? Отлично!
 	- ¿Cómo estás? ¡Genial!
 	- Comment ça va? Super!
-- **Last edit 2015-01-04**
+- **Last edit 2015-04-15**
