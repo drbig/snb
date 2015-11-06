@@ -2,7 +2,9 @@
  * Colours definition and setup function
  */
 
+#ifndef _GNU_SOURCE
 #define _GNU_SOURCE
+#endif
 
 #include <ncurses.h>
 

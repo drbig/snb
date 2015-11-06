@@ -7,7 +7,9 @@
  * Also implements means of returning error information.
  */
 
+#ifndef _GNU_SOURCE
 #define _GNU_SOURCE
+#endif
 
 #include <stdarg.h>
 #include <stdbool.h>
