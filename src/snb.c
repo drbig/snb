@@ -1,4 +1,6 @@
+#ifndef _GNU_SOURCE
 #define _GNU_SOURCE
+#endif
 #define _XOPEN_SOURCE_EXTENDED 1
 
 #include <stdbool.h>
