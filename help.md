@@ -78,9 +78,11 @@
 	- No word-wrapping
 	- No spell-checking
 	- Expand function works funny. It's 'expand more' with a fresh file, and then turns into 'expand all'
+	- Definitely bugs:
+		- ~~Segfault on empty file~~
 - Unicode test... (bonus)
 	- Jak się masz? Świetnie!
 	- Как дела? Отлично!
 	- ¿Cómo estás? ¡Genial!
 	- Comment ça va? Super!
-- **Last edit 2015-04-15**
+- **Last edit 2018-05-12**
