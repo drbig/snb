@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <errno.h>
 #include <locale.h>
 #include <ncurses.h>
 #include <unistd.h>
@@ -124,7 +125,8 @@ int main(int argc, char *argv[]) {
 
   if (!res.success) {
     fwprintf(stderr, L"ERROR: %S.\n", res.msg);
-    perror("Unix error");
+    if (errno != 0)
+      perror("Unix error");
     exit(2);
   }
   if (res.data == NULL)
