@@ -110,6 +110,8 @@ int main(int argc, char *argv[]) {
   UI_File.path = NULL;
   if (fp) {
     res = data_load(fp);
+    if (res.data == NULL)
+      res = entry_new(0);
     UI_File.loaded = true;
     UI_File.path = realpath(path, NULL);
     if (!UI_File.path) {
@@ -118,7 +120,7 @@ int main(int argc, char *argv[]) {
     }
     fclose(fp);
   } else {
-    res = entry_new(32);
+    res = entry_new(0);
     UI_File.loaded = false;
   }
 
