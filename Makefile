@@ -17,6 +17,8 @@ VERSION?=$(shell ${GIT} describe --tags --always --dirty --match "[0-9A-Z]*.[0-9
 NCURS_CONF?=ncursesw5-config
 NCURS_INC?=$(shell ${NCURS_CONF} --cflags)
 NCURS_LIB?=$(shell ${NCURS_CONF} --libs)
+CHECK_INC?=$(shell pkg-config --cflags check)
+CHECK_LIB?=$(shell pkg-config --libs check)
 INSTALL=install
 PREFIX=/usr
 
@@ -58,7 +60,7 @@ analyze:
 full-check: clean style debug check analyze
 
 tests/$(TESTS): $(DEPS)
-	$(CC) $(CFLAGS) $(LDFLAGS) $(NCURS_INC) -o $@ $(TESTDIR)/$(TESTS).c $(DEPS) $(NCURS_LIB) -lcheck
+	$(CC) $(CFLAGS) $(LDFLAGS) $(NCURS_INC) ${CHECK_INC} -o $@ $(TESTDIR)/$(TESTS).c $(DEPS) $(NCURS_LIB) ${CHECK_LIB}
 
 $(BINDIR)/$(PRG): $(DEPS)
 	@mkdir -p $(BINDIR)/
