@@ -3,7 +3,9 @@
 #include <stdlib.h>
 
 #include <check.h>
+#ifdef _GNU_SOURCE
 #include <error.h>
+#endif
 #include <locale.h>
 #include <string.h>
 #include <wchar.h>
