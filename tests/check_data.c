@@ -3,7 +3,6 @@
 #include <stdlib.h>
 
 #include <check.h>
-#include <error.h>
 #include <locale.h>
 #include <string.h>
 #include <wchar.h>
